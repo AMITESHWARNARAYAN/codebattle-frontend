@@ -1,6 +1,8 @@
 import io from 'socket.io-client';
 
-const SOCKET_URL = 'http://localhost:5000';
+// Get base URL from environment variable and remove /api suffix for socket connection
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const SOCKET_URL = API_URL.replace('/api', '');
 
 let socket = null;
 
