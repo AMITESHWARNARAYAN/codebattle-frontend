@@ -101,6 +101,8 @@ export const onOpponentSubmitted = (callback) => {
 export const setUserOnline = (userId, email) => {
   const socket = getSocket();
   socket.emit('user-online', { userId, email });
+  // Also join notification room
+  socket.emit('join', userId);
 };
 
 export const setUserOffline = (userId) => {
