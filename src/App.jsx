@@ -1,8 +1,8 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { useEffect } from 'react';
 import { useAuthStore } from './store/authStore';
 import { useThemeStore } from './store/themeStore';
-import { initSocket, setUserOnline, setUserOffline, onChallengeReceived } from './utils/socket';
+import { initSocket, setUserOnline, setUserOffline, onChallengeReceived, onChallengeAccepted } from './utils/socket';
 import { Toaster } from 'react-hot-toast';
 import { toast } from 'react-hot-toast';
 
@@ -37,7 +37,9 @@ const ProtectedRoute = ({ children }) => {
   return token ? children : <Navigate to="/login" />;
 };
 
-function App() {
+// App Routes Component (has access to useNavigate)
+function AppRoutes() {
+  const navigate = useNavigate();
   const token = useAuthStore((state) => state.token);
   const user = useAuthStore((state) => state.user);
   const getMe = useAuthStore((state) => state.getMe);
@@ -87,8 +89,20 @@ function App() {
     }
   }, [user]);
 
+  useEffect(() => {
+    // Listen for challenge acceptance - redirect both players to match
+    if (user) {
+      onChallengeAccepted((data) => {
+        toast.success('Your challenge was accepted! Starting match...');
+        setTimeout(() => {
+          navigate(`/match/${data.matchId}`);
+        }, 500);
+      });
+    }
+  }, [user, navigate]);
+
   return (
-    <Router>
+    <>
       <Toaster position="top-right" reverseOrder={false} />
       <Routes>
         <Route path="/landing" element={<Landing />} />
@@ -119,6 +133,14 @@ function App() {
 
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
+    </>
+  );
+}
+
+function App() {
+  return (
+    <Router>
+      <AppRoutes />
     </Router>
   );
 }
