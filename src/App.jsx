@@ -10,6 +10,7 @@ import { toast } from 'react-hot-toast';
 import Landing from './pages/Landing';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import VerifyEmail from './pages/VerifyEmail';
 import Dashboard from './pages/Dashboard';
 import CodeEditor from './pages/CodeEditor';
 import SoloPractice from './pages/SoloPractice';
