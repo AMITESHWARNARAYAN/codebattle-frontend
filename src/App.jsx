@@ -31,7 +31,6 @@ import Contests from './pages/Contests';
 import ContestDetail from './pages/ContestDetail';
 import ContestLive from './pages/ContestLive';
 import Notifications from './pages/Notifications';
-import VerifyEmail from './pages/VerifyEmail';
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
