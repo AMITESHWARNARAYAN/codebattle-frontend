@@ -1,11 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { toast } from 'react-hot-toast';
-import { Code2, Users, AlertCircle, CheckCircle, Lock, Mail, User, Eye, EyeOff } from 'lucide-react';
-import axios from 'axios';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+import { Code2, Lock, Mail, User, Eye, EyeOff } from 'lucide-react';
 
 export default function Register() {
   const [username, setUsername] = useState('');
@@ -14,22 +11,8 @@ export default function Register() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [registrationStatus, setRegistrationStatus] = useState(null);
   const navigate = useNavigate();
   const { register, loading } = useAuthStore();
-
-  useEffect(() => {
-    // Fetch registration status
-    const fetchStatus = async () => {
-      try {
-        const response = await axios.get(`${API_URL}/auth/registration-status`);
-        setRegistrationStatus(response.data);
-      } catch (error) {
-        console.error('Failed to fetch registration status:', error);
-      }
-    };
-    fetchStatus();
-  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -60,11 +43,7 @@ export default function Register() {
       navigate('/');
     } catch (error) {
       const errorMsg = error.response?.data?.message || 'Registration failed';
-      if (error.response?.data?.limitReached) {
-        toast.error(errorMsg, { duration: 5000 });
-      } else {
-        toast.error(errorMsg);
-      }
+      toast.error(errorMsg);
     }
   };
 
@@ -89,54 +68,9 @@ export default function Register() {
           </p>
         </div>
 
-        {/* Registration Status Banner */}
-        {registrationStatus && (
-          <div className={`mb-6 p-4 rounded-lg border ${
-            registrationStatus.isAvailable
-              ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800'
-              : 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800'
-          }`}>
-            <div className="flex items-center gap-3">
-              {registrationStatus.isAvailable ? (
-                <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400 flex-shrink-0" />
-              ) : (
-                <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0" />
-              )}
-              <div className="flex-1">
-                <p className={`font-semibold ${registrationStatus.isAvailable ? 'text-green-700 dark:text-green-300' : 'text-red-700 dark:text-red-300'}`}>
-                  {registrationStatus.isAvailable
-                    ? `${registrationStatus.availableSlots} spots remaining`
-                    : 'Registration Closed'}
-                </p>
-                <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                  {registrationStatus.totalUsers} / {registrationStatus.maxUsers} users registered
-                </p>
-              </div>
-              <Users className={`w-6 h-6 ${registrationStatus.isAvailable ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`} />
-            </div>
-          </div>
-        )}
-
         {/* Register Form */}
         <div className="bg-white dark:bg-dark-900 rounded-lg shadow-sm border border-gray-200 dark:border-dark-800 p-8">
-          {registrationStatus && !registrationStatus.isAvailable ? (
-            <div className="text-center py-8">
-              <div className="w-16 h-16 bg-red-100 dark:bg-red-900/20 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Lock className="w-8 h-8 text-red-600 dark:text-red-400" />
-              </div>
-              <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Registration Limit Reached</h3>
-              <p className="text-gray-600 dark:text-gray-400 mb-6">
-                We've reached our maximum capacity. Please check back later.
-              </p>
-              <Link
-                to="/login"
-                className="inline-flex items-center gap-2 px-6 py-2.5 bg-gray-900 dark:bg-white hover:bg-gray-800 dark:hover:bg-gray-100 text-white dark:text-gray-900 rounded-lg font-medium transition"
-              >
-                Go to Login
-              </Link>
-            </div>
-          ) : (
-            <form onSubmit={handleSubmit} className="space-y-5">
+          <form onSubmit={handleSubmit} className="space-y-5">
               {/* Username */}
               <div>
                 <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
@@ -240,7 +174,6 @@ export default function Register() {
                 )}
               </button>
             </form>
-          )}
 
           <div className="mt-6 text-center">
             <p className="text-gray-600 dark:text-gray-400 text-sm">
