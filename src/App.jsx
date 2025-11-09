@@ -10,6 +10,7 @@ import { toast } from 'react-hot-toast';
 import Landing from './pages/Landing';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import VerifyEmail from './pages/VerifyEmail';
 import Dashboard from './pages/Dashboard';
 import CodeEditor from './pages/CodeEditor';
 import SoloPractice from './pages/SoloPractice';
@@ -30,6 +31,7 @@ import Contests from './pages/Contests';
 import ContestDetail from './pages/ContestDetail';
 import ContestLive from './pages/ContestLive';
 import Notifications from './pages/Notifications';
+import VerifyEmail from './pages/VerifyEmail';
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
@@ -108,6 +110,7 @@ function AppRoutes() {
         <Route path="/landing" element={<Landing />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/verify-email/:token" element={<VerifyEmail />} />
 
         <Route path="/" element={token ? <ProtectedRoute><Dashboard /></ProtectedRoute> : <Landing />} />
         <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />

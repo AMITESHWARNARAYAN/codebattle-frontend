@@ -24,7 +24,12 @@ export default function Login() {
       toast.success('Welcome back!');
       navigate('/');
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Login failed');
+      const errorData = error.response?.data;
+      if (errorData?.emailNotVerified) {
+        toast.error('Please verify your email before logging in. Check your inbox! 📧', { duration: 5000 });
+      } else {
+        toast.error(errorData?.message || 'Login failed');
+      }
     }
   };
 
