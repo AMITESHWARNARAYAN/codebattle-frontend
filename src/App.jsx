@@ -30,6 +30,7 @@ import Contests from './pages/Contests';
 import ContestDetail from './pages/ContestDetail';
 import ContestLive from './pages/ContestLive';
 import Notifications from './pages/Notifications';
+import VerifyEmail from './pages/VerifyEmail';
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
@@ -108,6 +109,7 @@ function AppRoutes() {
         <Route path="/landing" element={<Landing />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/verify-email/:token" element={<VerifyEmail />} />
 
         <Route path="/" element={token ? <ProtectedRoute><Dashboard /></ProtectedRoute> : <Landing />} />
         <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />

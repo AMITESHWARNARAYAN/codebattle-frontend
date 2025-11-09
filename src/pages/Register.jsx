@@ -55,16 +55,15 @@ export default function Register() {
     }
 
     try {
-      await register(username, email, password);
-      toast.success('Registration successful!');
-      navigate('/');
+      const response = await register(username, email, password);
+      toast.success('Registration successful! Please check your email to verify your account. 📧');
+      // Don't navigate immediately, let user see the message
+      setTimeout(() => {
+        navigate('/login');
+      }, 2000);
     } catch (error) {
       const errorMsg = error.response?.data?.message || 'Registration failed';
-      if (error.response?.data?.limitReached) {
-        toast.error(errorMsg, { duration: 5000 });
-      } else {
-        toast.error(errorMsg);
-      }
+      toast.error(errorMsg);
     }
   };
 
