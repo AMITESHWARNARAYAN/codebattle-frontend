@@ -8,7 +8,6 @@ import { toast } from 'react-hot-toast';
 import { getSocket, acceptChallenge as emitAcceptChallenge, rejectChallenge as emitRejectChallenge } from '../utils/socket';
 import NotificationBell from '../components/NotificationBell';
 import ThemeToggle from '../components/ThemeToggle';
-import EmailVerificationBanner from '../components/EmailVerificationBanner';
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -20,7 +19,6 @@ export default function Dashboard() {
   const [challengeLoading, setChallengeLoading] = useState({});
   const [activeChallengesCount, setActiveChallengesCount] = useState(0);
   const [runningContestsCount, setRunningContestsCount] = useState(0);
-  const [showVerificationBanner, setShowVerificationBanner] = useState(true);
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -177,11 +175,6 @@ export default function Dashboard() {
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 py-8">
-        {/* Email Verification Banner */}
-        {user && !user.isEmailVerified && showVerificationBanner && (
-          <EmailVerificationBanner onClose={() => setShowVerificationBanner(false)} />
-        )}
-
         {/* Welcome Section */}
         <div className="mb-8">
           <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-2">
