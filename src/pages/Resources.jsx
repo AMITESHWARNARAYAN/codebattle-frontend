@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { useThemeStore } from '../store/themeStore';
 import { useAuthStore } from '../store/authStore';
-import { BookOpen, Video, FileText, Code2, ExternalLink, Github, Youtube, Award, Lightbulb, Zap, Target, Brain, ArrowRight, Book, Library, Newspaper, GraduationCap } from 'lucide-react';
+import { BookOpen, Video, FileText, Code2, ExternalLink, Github, Youtube, Award, Lightbulb, Zap, Target, Brain, ArrowRight, Book, Library, Newspaper, GraduationCap, Trophy } from 'lucide-react';
 import { useState } from 'react';
 
 export default function Resources() {
