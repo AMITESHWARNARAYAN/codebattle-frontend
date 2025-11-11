@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { useUserStore } from '../store/userStore';
 import { useMatchStore } from '../store/matchStore';
-import { LogOut, Trophy, Zap, Users, Check, X, Settings, Calendar, Target, Brain, Sparkles, TrendingUp, Award, Code2, Swords, BookOpen } from 'lucide-react';
+import { useThemeStore } from '../store/themeStore';
+import { LogOut, Trophy, Zap, Users, Check, X, Settings, Calendar, Target, Brain, Sparkles, TrendingUp, Award, Code2, Swords, BookOpen, ArrowRight, Play, Clock, BarChart3 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { getSocket, acceptChallenge as emitAcceptChallenge, rejectChallenge as emitRejectChallenge } from '../utils/socket';
 import NotificationBell from '../components/NotificationBell';
@@ -14,11 +15,20 @@ export default function Dashboard() {
   const { user, logout } = useAuthStore();
   const { getUserStats, userStats } = useUserStore();
   const { getPendingChallenges, acceptChallenge, rejectChallenge } = useMatchStore();
+  const { isDark } = useThemeStore();
   const [loading, setLoading] = useState(true);
   const [pendingChallenges, setPendingChallenges] = useState([]);
   const [challengeLoading, setChallengeLoading] = useState({});
   const [activeChallengesCount, setActiveChallengesCount] = useState(0);
   const [runningContestsCount, setRunningContestsCount] = useState(0);
+  const [hoveredCard, setHoveredCard] = useState(null);
+
+  // TensorFlow color scheme
+  const bgColor = isDark ? '#0a0a0a' : '#ffffff';
+  const textColor = isDark ? '#ffffff' : '#1a1a1a';
+  const textMuted = isDark ? '#9ca3af' : '#6b7280';
+  const borderColor = isDark ? '#2a2a2a' : '#e5e7eb';
+  const cardBg = isDark ? '#1a1a1a' : '#ffffff';
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -104,59 +114,59 @@ export default function Dashboard() {
       label: 'ELO Rating',
       value: user?.rating || 1200,
       icon: Trophy,
-      gradient: 'from-yellow-500 to-orange-500',
-      bgGradient: 'from-yellow-500/10 to-orange-500/10',
-      change: user?.rating > 1200 ? `+${user.rating - 1200}` : user?.rating < 1200 ? `${user.rating - 1200}` : '0'
+      change: user?.rating > 1200 ? `+${user.rating - 1200}` : user?.rating < 1200 ? `${user.rating - 1200}` : '0',
+      color: 'orange'
     },
     {
       label: 'Total Wins',
       value: user?.wins || 0,
       icon: Zap,
-      gradient: 'from-green-500 to-emerald-500',
-      bgGradient: 'from-green-500/10 to-emerald-500/10',
-      change: `${winRate}% WR`
+      change: `${winRate}% WR`,
+      color: 'green'
     },
     {
       label: 'Total Matches',
       value: user?.totalMatches || 0,
       icon: Swords,
-      gradient: 'from-blue-500 to-cyan-500',
-      bgGradient: 'from-blue-500/10 to-cyan-500/10',
-      change: `${user?.losses || 0} losses`
+      change: `${user?.losses || 0} losses`,
+      color: 'blue'
     },
     {
-      label: 'Highest Rating',
+      label: 'Peak Rating',
       value: user?.highestRating || user?.rating || 1200,
       icon: Award,
-      gradient: 'from-purple-500 to-pink-500',
-      bgGradient: 'from-purple-500/10 to-pink-500/10',
-      change: 'Peak'
+      change: 'All-time best',
+      color: 'purple'
     }
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-dark-950">
-      {/* Header */}
-      <header className="bg-white dark:bg-dark-900 border-b border-gray-200 dark:border-dark-800 sticky top-0 z-50 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="p-1.5 bg-gray-900 dark:bg-white rounded-lg">
-              <Code2 className="w-5 h-5 text-white dark:text-gray-900" />
+    <div className="min-h-screen" style={{ backgroundColor: bgColor }}>
+      {/* Header - TensorFlow Style */}
+      <header className={`${cardBg} border-b ${borderColor} sticky top-0 z-50`} style={{ borderBottomWidth: '1px', borderBottomColor: isDark ? '#2a2a2a' : '#e5e7eb' }}>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-3 cursor-pointer" onClick={() => navigate('/dashboard')}>
+            <div className="relative">
+              <div className="absolute inset-0 bg-gradient-to-r from-orange-500 to-red-500 rounded-lg blur-sm opacity-50"></div>
+              <div className="relative p-2 bg-gradient-to-r from-orange-500 to-red-500 rounded-lg shadow-lg">
+                <Code2 className="w-5 h-5 text-white" />
+              </div>
             </div>
-            <h1 className="text-xl font-semibold text-gray-900 dark:text-white">
+            <h1 className={`text-xl font-bold ${textColor}`}>
               CodeBattle
             </h1>
           </div>
+          
           <div className="flex items-center gap-3">
-            <div className="hidden md:flex items-center gap-2 px-3 py-1.5 bg-gray-100 dark:bg-dark-800 rounded-lg border border-gray-200 dark:border-dark-700">
-              <span className="text-gray-700 dark:text-gray-300 font-medium text-sm">{user?.username}</span>
+            <div className={`hidden md:flex items-center gap-2 px-3 py-1.5 rounded-lg border ${isDark ? 'bg-dark-800 border-dark-700' : 'bg-gray-50 border-gray-200'}`}>
+              <span className={`${textColor} font-medium text-sm`}>{user?.username}</span>
             </div>
             <NotificationBell />
             <ThemeToggle />
             {user?.isAdmin && (
               <button
                 onClick={() => navigate('/admin')}
-                className="flex items-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white hover:bg-gray-800 dark:hover:bg-gray-100 text-white dark:text-gray-900 rounded-lg transition font-medium text-sm"
+                className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white rounded-lg transition font-medium text-sm shadow-lg"
               >
                 <Settings className="w-4 h-4" />
                 <span className="hidden md:inline">Admin</span>
@@ -164,7 +174,7 @@ export default function Dashboard() {
             )}
             <button
               onClick={handleLogout}
-              className="flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-dark-800 hover:bg-gray-200 dark:hover:bg-dark-700 text-gray-900 dark:text-white border border-gray-200 dark:border-dark-700 rounded-lg transition font-medium text-sm"
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg transition font-medium text-sm border ${isDark ? 'bg-dark-800 hover:bg-dark-700 border-dark-700 text-white' : 'bg-gray-100 hover:bg-gray-200 border-gray-200 text-gray-900'}`}
             >
               <LogOut className="w-4 h-4" />
               <span className="hidden md:inline">Logout</span>
@@ -174,35 +184,43 @@ export default function Dashboard() {
       </header>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 py-8">
-        {/* Welcome Section */}
-        <div className="mb-8">
-          <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-2">
-            Welcome back, {user?.username}!
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Welcome Section - TensorFlow Style */}
+        <div className="mb-12">
+          <h2 className={`text-4xl md:text-5xl font-bold ${textColor} mb-3`}>
+            Welcome back, <span className="bg-gradient-to-r from-orange-500 to-red-500 bg-clip-text text-transparent">{user?.username}</span>
           </h2>
-          <p className="text-gray-600 dark:text-gray-400">Ready to compete and improve your coding skills?</p>
+          <p className={`text-lg ${textMuted}`}>Ready to compete and level up your coding skills?</p>
         </div>
 
-        {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        {/* Stats Grid - TensorFlow Style */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
           {stats.map((stat, index) => {
             const Icon = stat.icon;
             return (
               <div
                 key={index}
-                className="bg-white dark:bg-dark-900 rounded-lg p-6 border border-gray-200 dark:border-dark-800"
+                onMouseEnter={() => setHoveredCard(`stat-${index}`)}
+                onMouseLeave={() => setHoveredCard(null)}
+                className={`${cardBg} rounded-xl p-6 border transition-all duration-300 cursor-pointer ${
+                  hoveredCard === `stat-${index}` ? 'transform scale-105 shadow-2xl' : 'shadow-lg'
+                }`}
+                style={{ 
+                  borderColor: isDark ? '#2a2a2a' : '#e5e7eb',
+                  borderWidth: '1px'
+                }}
               >
                 <div className="flex items-start justify-between mb-4">
-                  <div className="p-2 bg-gray-100 dark:bg-dark-800 rounded-lg">
-                    <Icon className="w-5 h-5 text-gray-700 dark:text-gray-300" />
+                  <div className={`p-3 rounded-lg ${isDark ? 'bg-dark-800' : 'bg-gray-50'}`}>
+                    <Icon className="w-6 h-6 text-orange-500" />
                   </div>
-                  <div className="flex items-center gap-1 text-xs font-medium text-gray-500 dark:text-gray-400">
+                  <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${isDark ? 'bg-dark-800 text-gray-300' : 'bg-gray-100 text-gray-600'}`}>
                     <TrendingUp className="w-3 h-3" />
                     {stat.change}
                   </div>
                 </div>
-                <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">{stat.label}</p>
-                <p className="text-3xl font-bold text-gray-900 dark:text-white">
+                <p className={`text-sm ${textMuted} mb-2`}>{stat.label}</p>
+                <p className={`text-4xl font-bold ${textColor}`}>
                   {stat.value}
                 </p>
               </div>
@@ -210,34 +228,40 @@ export default function Dashboard() {
           })}
         </div>
 
-        {/* Pending Challenges */}
+        {/* Pending Challenges - TensorFlow Style */}
         {pendingChallenges.length > 0 && (
-          <div className="mb-8">
-            <div className="flex items-center gap-3 mb-4">
-              <h3 className="text-xl font-bold text-gray-900 dark:text-white">Pending Challenges</h3>
-              <span className="px-2 py-1 bg-red-100 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-full text-xs font-semibold text-red-700 dark:text-red-300">
+          <div className="mb-12">
+            <div className="flex items-center gap-3 mb-6">
+              <h3 className={`text-2xl font-bold ${textColor}`}>Pending Challenges</h3>
+              <span className="px-3 py-1 bg-gradient-to-r from-orange-500 to-red-500 rounded-full text-xs font-semibold text-white shadow-lg">
                 {pendingChallenges.length} New
               </span>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {pendingChallenges.map((challenge) => (
                 <div
                   key={challenge._id}
-                  className="bg-white dark:bg-dark-900 rounded-lg p-6 border-l-4 border-gray-900 dark:border-white"
+                  className={`${cardBg} rounded-xl p-6 border-l-4 border-orange-500 shadow-lg transition-all duration-300 hover:shadow-2xl`}
+                  style={{ 
+                    borderTopWidth: '1px',
+                    borderRightWidth: '1px',
+                    borderBottomWidth: '1px',
+                    borderColor: isDark ? '#2a2a2a' : '#e5e7eb'
+                  }}
                 >
                   <div className="flex items-start justify-between mb-4">
                     <div>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Challenge from</p>
-                      <p className="text-lg font-bold text-gray-900 dark:text-white">{challenge.challengerEmail}</p>
+                      <p className={`text-xs ${textMuted} mb-1`}>Challenge from</p>
+                      <p className={`text-lg font-bold ${textColor}`}>{challenge.challengerEmail}</p>
                     </div>
-                    <span className="px-2 py-1 bg-yellow-100 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-full text-xs font-semibold text-yellow-700 dark:text-yellow-300">
+                    <span className="px-3 py-1 bg-yellow-100 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-full text-xs font-semibold text-yellow-700 dark:text-yellow-300">
                       Pending
                     </span>
                   </div>
 
-                  <div className="mb-4 p-3 bg-gray-50 dark:bg-dark-800 rounded-lg border border-gray-200 dark:border-dark-700">
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Problem</p>
-                    <p className="font-semibold text-gray-900 dark:text-white mb-2">{challenge.problem?.title}</p>
+                  <div className={`mb-4 p-4 rounded-lg border ${isDark ? 'bg-dark-800 border-dark-700' : 'bg-gray-50 border-gray-200'}`}>
+                    <p className={`text-xs ${textMuted} mb-1`}>Problem</p>
+                    <p className={`font-semibold ${textColor} mb-2`}>{challenge.problem?.title}</p>
                     <span className={`px-2 py-0.5 rounded text-xs font-semibold ${
                       challenge.problem?.difficulty === 'Easy' ? 'bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-300' :
                       challenge.problem?.difficulty === 'Medium' ? 'bg-yellow-100 dark:bg-yellow-900/20 text-yellow-700 dark:text-yellow-300' :
@@ -247,11 +271,11 @@ export default function Dashboard() {
                     </span>
                   </div>
 
-                  <div className="flex gap-2">
+                  <div className="flex gap-3">
                     <button
                       onClick={() => handleAcceptChallenge(challenge._id, challenge)}
                       disabled={challengeLoading[challenge._id]}
-                      className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed font-medium text-sm"
+                      className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed font-medium text-sm shadow-lg"
                     >
                       <Check className="w-4 h-4" />
                       {challengeLoading[challenge._id] ? 'Accepting...' : 'Accept'}
@@ -259,7 +283,7 @@ export default function Dashboard() {
                     <button
                       onClick={() => handleRejectChallenge(challenge._id, challenge)}
                       disabled={challengeLoading[challenge._id]}
-                      className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-gray-200 dark:bg-dark-800 hover:bg-gray-300 dark:hover:bg-dark-700 text-gray-900 dark:text-white rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed font-medium text-sm border border-gray-300 dark:border-dark-700"
+                      className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed font-medium text-sm border ${isDark ? 'bg-dark-800 hover:bg-dark-700 border-dark-700 text-white' : 'bg-gray-100 hover:bg-gray-200 border-gray-200 text-gray-900'}`}
                     >
                       <X className="w-4 h-4" />
                       {challengeLoading[challenge._id] ? 'Rejecting...' : 'Reject'}
@@ -271,23 +295,26 @@ export default function Dashboard() {
           </div>
         )}
 
-        {/* Quick Action Banners */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+        {/* Quick Action Banners - TensorFlow Style */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
           {/* Daily Challenge Banner */}
           <div
             onClick={() => navigate('/daily-challenge')}
-            className="bg-white dark:bg-dark-900 rounded-lg p-6 cursor-pointer hover:shadow-md transition border border-gray-200 dark:border-dark-800"
+            onMouseEnter={() => setHoveredCard('daily')}
+            onMouseLeave={() => setHoveredCard(null)}
+            className={`${cardBg} rounded-xl p-6 cursor-pointer transition-all duration-300 border ${
+              hoveredCard === 'daily' ? 'transform scale-105 shadow-2xl' : 'shadow-lg'
+            }`}
+            style={{ borderColor: isDark ? '#2a2a2a' : '#e5e7eb', borderWidth: '1px' }}
           >
             <div className="flex items-center justify-between mb-4">
-              <div className="p-2 bg-orange-100 dark:bg-orange-900/20 rounded-lg">
-                <Calendar className="w-6 h-6 text-orange-600 dark:text-orange-400" />
+              <div className="p-3 bg-gradient-to-r from-orange-500 to-red-500 rounded-lg shadow-lg">
+                <Calendar className="w-6 h-6 text-white" />
               </div>
-              <div className="text-gray-400 dark:text-gray-500 font-bold text-xl">
-                →
-              </div>
+              <ArrowRight className="w-5 h-5 text-orange-500" />
             </div>
-            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-1">Daily Challenge</h3>
-            <p className="text-sm text-gray-600 dark:text-gray-400">
+            <h3 className={`text-lg font-bold ${textColor} mb-2`}>Daily Challenge</h3>
+            <p className={`text-sm ${textMuted}`}>
               Maintain your streak!
             </p>
           </div>
@@ -295,18 +322,21 @@ export default function Dashboard() {
           {/* Admin Challenges Banner */}
           <div
             onClick={() => navigate('/challenges')}
-            className="bg-white dark:bg-dark-900 rounded-lg p-6 cursor-pointer hover:shadow-md transition border border-gray-200 dark:border-dark-800"
+            onMouseEnter={() => setHoveredCard('challenges')}
+            onMouseLeave={() => setHoveredCard(null)}
+            className={`${cardBg} rounded-xl p-6 cursor-pointer transition-all duration-300 border ${
+              hoveredCard === 'challenges' ? 'transform scale-105 shadow-2xl' : 'shadow-lg'
+            }`}
+            style={{ borderColor: isDark ? '#2a2a2a' : '#e5e7eb', borderWidth: '1px' }}
           >
             <div className="flex items-center justify-between mb-4">
-              <div className="p-2 bg-purple-100 dark:bg-purple-900/20 rounded-lg">
-                <Target className="w-6 h-6 text-purple-600 dark:text-purple-400" />
+              <div className="p-3 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg shadow-lg">
+                <Target className="w-6 h-6 text-white" />
               </div>
-              <div className="text-gray-400 dark:text-gray-500 font-bold text-xl">
-                →
-              </div>
+              <ArrowRight className="w-5 h-5 text-purple-500" />
             </div>
-            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-1">Challenges</h3>
-            <p className="text-sm text-gray-600 dark:text-gray-400">
+            <h3 className={`text-lg font-bold ${textColor} mb-2`}>Challenges</h3>
+            <p className={`text-sm ${textMuted}`}>
               Complete & earn rewards!
             </p>
           </div>
@@ -314,18 +344,21 @@ export default function Dashboard() {
           {/* Contests Banner */}
           <div
             onClick={() => navigate('/contests')}
-            className="bg-white dark:bg-dark-900 rounded-lg p-6 cursor-pointer hover:shadow-md transition border border-gray-200 dark:border-dark-800"
+            onMouseEnter={() => setHoveredCard('contests')}
+            onMouseLeave={() => setHoveredCard(null)}
+            className={`${cardBg} rounded-xl p-6 cursor-pointer transition-all duration-300 border ${
+              hoveredCard === 'contests' ? 'transform scale-105 shadow-2xl' : 'shadow-lg'
+            }`}
+            style={{ borderColor: isDark ? '#2a2a2a' : '#e5e7eb', borderWidth: '1px' }}
           >
             <div className="flex items-center justify-between mb-4">
-              <div className="p-2 bg-yellow-100 dark:bg-yellow-900/20 rounded-lg">
-                <Trophy className="w-6 h-6 text-yellow-600 dark:text-yellow-400" />
+              <div className="p-3 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-lg shadow-lg">
+                <Trophy className="w-6 h-6 text-white" />
               </div>
-              <div className="text-gray-400 dark:text-gray-500 font-bold text-xl">
-                →
-              </div>
+              <ArrowRight className="w-5 h-5 text-blue-500" />
             </div>
-            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-1">Contests</h3>
-            <p className="text-sm text-gray-600 dark:text-gray-400">
+            <h3 className={`text-lg font-bold ${textColor} mb-2`}>Contests</h3>
+            <p className={`text-sm ${textMuted}`}>
               {runningContestsCount > 0 ? (
                 <span className="flex items-center gap-2">
                   <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
@@ -338,98 +371,145 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Game Modes */}
-        <div className="mb-8">
-          <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Choose Your Mode</h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {/* Game Modes - TensorFlow Style */}
+        <div className="mb-12">
+          <h3 className={`text-2xl font-bold ${textColor} mb-6`}>Choose Your Mode</h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {/* Matchmaking */}
             <div
               onClick={() => navigate('/matchmaking')}
-              className="bg-white dark:bg-dark-900 rounded-lg p-6 border border-gray-200 dark:border-dark-800 cursor-pointer hover:shadow-md transition"
+              onMouseEnter={() => setHoveredCard('matchmaking')}
+              onMouseLeave={() => setHoveredCard(null)}
+              className={`${cardBg} rounded-xl p-8 border cursor-pointer transition-all duration-300 ${
+                hoveredCard === 'matchmaking' ? 'transform scale-105 shadow-2xl' : 'shadow-lg'
+              }`}
+              style={{ borderColor: isDark ? '#2a2a2a' : '#e5e7eb', borderWidth: '1px' }}
             >
-              <div className="text-4xl mb-3">⚡</div>
-              <h4 className="text-lg font-bold text-gray-900 dark:text-white mb-2">Matchmaking</h4>
-              <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                Get matched with players of similar skill level and compete in real-time.
+              <div className="text-5xl mb-4">⚡</div>
+              <h4 className={`text-xl font-bold ${textColor} mb-3`}>Matchmaking</h4>
+              <p className={`text-sm ${textMuted} mb-6`}>
+                Get matched with players of similar skill level and compete in real-time battles.
               </p>
-              <div className="flex items-center gap-2 text-gray-900 dark:text-white font-medium text-sm">
+              <div className="flex items-center gap-2 text-orange-500 font-semibold text-sm">
                 Start Matching
-                <span>→</span>
+                <ArrowRight className="w-4 h-4" />
               </div>
             </div>
 
             {/* Friend Challenge */}
             <div
               onClick={() => navigate('/friend-challenge')}
-              className="bg-white dark:bg-dark-900 rounded-lg p-6 border border-gray-200 dark:border-dark-800 cursor-pointer hover:shadow-md transition"
+              onMouseEnter={() => setHoveredCard('friend')}
+              onMouseLeave={() => setHoveredCard(null)}
+              className={`${cardBg} rounded-xl p-8 border cursor-pointer transition-all duration-300 ${
+                hoveredCard === 'friend' ? 'transform scale-105 shadow-2xl' : 'shadow-lg'
+              }`}
+              style={{ borderColor: isDark ? '#2a2a2a' : '#e5e7eb', borderWidth: '1px' }}
             >
-              <div className="text-4xl mb-3">👥</div>
-              <h4 className="text-lg font-bold text-gray-900 dark:text-white mb-2">Challenge Friend</h4>
-              <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                Send an invitation link to your friend and compete head-to-head.
+              <div className="text-5xl mb-4">👥</div>
+              <h4 className={`text-xl font-bold ${textColor} mb-3`}>Challenge Friend</h4>
+              <p className={`text-sm ${textMuted} mb-6`}>
+                Send an invitation link to your friend and compete head-to-head in custom matches.
               </p>
-              <div className="flex items-center gap-2 text-gray-900 dark:text-white font-medium text-sm">
-                Challenge
-                <span>→</span>
+              <div className="flex items-center gap-2 text-orange-500 font-semibold text-sm">
+                Challenge Now
+                <ArrowRight className="w-4 h-4" />
               </div>
             </div>
 
             {/* Solo Practice */}
             <div
               onClick={() => navigate('/match/solo')}
-              className="bg-white dark:bg-dark-900 rounded-lg p-6 border border-gray-200 dark:border-dark-800 cursor-pointer hover:shadow-md transition"
+              onMouseEnter={() => setHoveredCard('solo')}
+              onMouseLeave={() => setHoveredCard(null)}
+              className={`${cardBg} rounded-xl p-8 border cursor-pointer transition-all duration-300 ${
+                hoveredCard === 'solo' ? 'transform scale-105 shadow-2xl' : 'shadow-lg'
+              }`}
+              style={{ borderColor: isDark ? '#2a2a2a' : '#e5e7eb', borderWidth: '1px' }}
             >
-              <div className="text-4xl mb-3">🎯</div>
-              <h4 className="text-lg font-bold text-gray-900 dark:text-white mb-2">Solo Practice</h4>
-              <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                Practice DSA problems at your own pace without time pressure.
+              <div className="text-5xl mb-4">🎯</div>
+              <h4 className={`text-xl font-bold ${textColor} mb-3`}>Solo Practice</h4>
+              <p className={`text-sm ${textMuted} mb-6`}>
+                Practice DSA problems at your own pace without time pressure or competition.
               </p>
-              <div className="flex items-center gap-2 text-gray-900 dark:text-white font-medium text-sm">
-                Practice
-                <span>→</span>
+              <div className="flex items-center gap-2 text-orange-500 font-semibold text-sm">
+                Start Practice
+                <ArrowRight className="w-4 h-4" />
               </div>
             </div>
           </div>
         </div>
 
-        {/* Quick Links */}
+        {/* Quick Links - TensorFlow Style */}
         <div>
-          <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Quick Access</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <h3 className={`text-2xl font-bold ${textColor} mb-6`}>Quick Access</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <div
               onClick={() => navigate('/problems')}
-              className="bg-white dark:bg-dark-900 rounded-lg p-5 border border-gray-200 dark:border-dark-800 cursor-pointer hover:shadow-md transition"
+              onMouseEnter={() => setHoveredCard('problems')}
+              onMouseLeave={() => setHoveredCard(null)}
+              className={`${cardBg} rounded-xl p-6 border cursor-pointer transition-all duration-300 ${
+                hoveredCard === 'problems' ? 'transform scale-105 shadow-2xl' : 'shadow-lg'
+              }`}
+              style={{ borderColor: isDark ? '#2a2a2a' : '#e5e7eb', borderWidth: '1px' }}
             >
-              <div className="text-3xl mb-2">📚</div>
-              <h4 className="text-base font-bold text-gray-900 dark:text-white mb-1">Practice Problems</h4>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Browse problems by category</p>
+              <div className="flex items-center justify-between mb-4">
+                <div className="text-4xl">📚</div>
+                <BookOpen className="w-5 h-5 text-orange-500" />
+              </div>
+              <h4 className={`text-lg font-bold ${textColor} mb-2`}>Practice Problems</h4>
+              <p className={`text-sm ${textMuted}`}>Browse problems by category</p>
             </div>
 
             <div
               onClick={() => navigate('/leaderboard')}
-              className="bg-white dark:bg-dark-900 rounded-lg p-5 border border-gray-200 dark:border-dark-800 cursor-pointer hover:shadow-md transition"
+              onMouseEnter={() => setHoveredCard('leaderboard')}
+              onMouseLeave={() => setHoveredCard(null)}
+              className={`${cardBg} rounded-xl p-6 border cursor-pointer transition-all duration-300 ${
+                hoveredCard === 'leaderboard' ? 'transform scale-105 shadow-2xl' : 'shadow-lg'
+              }`}
+              style={{ borderColor: isDark ? '#2a2a2a' : '#e5e7eb', borderWidth: '1px' }}
             >
-              <div className="text-3xl mb-2">🏆</div>
-              <h4 className="text-base font-bold text-gray-900 dark:text-white mb-1">Leaderboard</h4>
-              <p className="text-sm text-gray-600 dark:text-gray-400">See global rankings</p>
+              <div className="flex items-center justify-between mb-4">
+                <div className="text-4xl">🏆</div>
+                <Trophy className="w-5 h-5 text-orange-500" />
+              </div>
+              <h4 className={`text-lg font-bold ${textColor} mb-2`}>Leaderboard</h4>
+              <p className={`text-sm ${textMuted}`}>See global rankings</p>
             </div>
 
             <div
               onClick={() => navigate(`/profile/${user?.username}`)}
-              className="bg-white dark:bg-dark-900 rounded-lg p-5 border border-gray-200 dark:border-dark-800 cursor-pointer hover:shadow-md transition"
+              onMouseEnter={() => setHoveredCard('profile')}
+              onMouseLeave={() => setHoveredCard(null)}
+              className={`${cardBg} rounded-xl p-6 border cursor-pointer transition-all duration-300 ${
+                hoveredCard === 'profile' ? 'transform scale-105 shadow-2xl' : 'shadow-lg'
+              }`}
+              style={{ borderColor: isDark ? '#2a2a2a' : '#e5e7eb', borderWidth: '1px' }}
             >
-              <div className="text-3xl mb-2">📊</div>
-              <h4 className="text-base font-bold text-gray-900 dark:text-white mb-1">Your Profile</h4>
-              <p className="text-sm text-gray-600 dark:text-gray-400">View your statistics</p>
+              <div className="flex items-center justify-between mb-4">
+                <div className="text-4xl">📊</div>
+                <BarChart3 className="w-5 h-5 text-orange-500" />
+              </div>
+              <h4 className={`text-lg font-bold ${textColor} mb-2`}>Your Profile</h4>
+              <p className={`text-sm ${textMuted}`}>View your statistics</p>
             </div>
 
             <div
               onClick={() => navigate('/submissions')}
-              className="bg-white dark:bg-dark-900 rounded-lg p-5 border border-gray-200 dark:border-dark-800 cursor-pointer hover:shadow-md transition"
+              onMouseEnter={() => setHoveredCard('submissions')}
+              onMouseLeave={() => setHoveredCard(null)}
+              className={`${cardBg} rounded-xl p-6 border cursor-pointer transition-all duration-300 ${
+                hoveredCard === 'submissions' ? 'transform scale-105 shadow-2xl' : 'shadow-lg'
+              }`}
+              style={{ borderColor: isDark ? '#2a2a2a' : '#e5e7eb', borderWidth: '1px' }}
             >
-              <div className="text-3xl mb-2">📝</div>
-              <h4 className="text-base font-bold text-gray-900 dark:text-white mb-1">Submissions</h4>
-              <p className="text-sm text-gray-600 dark:text-gray-400">View your code history</p>
+              <div className="flex items-center justify-between mb-4">
+                <div className="text-4xl">📝</div>
+                <Code2 className="w-5 h-5 text-orange-500" />
+              </div>
+              <h4 className={`text-lg font-bold ${textColor} mb-2`}>Submissions</h4>
+              <p className={`text-sm ${textMuted}`}>View your code history</p>
             </div>
           </div>
         </div>
