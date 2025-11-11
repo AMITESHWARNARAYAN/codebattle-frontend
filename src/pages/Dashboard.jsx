@@ -223,8 +223,122 @@ export default function Dashboard() {
         </div>
       </header>
 
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">`
+      {/* Main Content with Sidebar */}
+      <div className="flex">
+        {/* Sidebar */}
+        <aside className={`hidden lg:block w-64 min-h-screen ${cardBg} border-r`} style={{ borderColor: isDark ? '#2a2a2a' : '#e5e7eb', borderRightWidth: '1px' }}>
+          <div className="sticky top-20 p-6">
+            {/* User Info Card */}
+            <div 
+              className={`${cardBg} rounded-xl p-4 border mb-6 cursor-pointer transition-all duration-300 hover:shadow-lg`}
+              style={{ borderColor: isDark ? '#2a2a2a' : '#e5e7eb', borderWidth: '1px' }}
+              onClick={() => navigate(`/profile/${user?.username}`)}
+            >
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-12 h-12 rounded-full bg-gradient-to-r from-orange-500 to-red-500 flex items-center justify-center text-white font-bold text-lg shadow-lg">
+                  {user?.username?.charAt(0).toUpperCase()}
+                </div>
+                <div>
+                  <p className={`font-semibold ${textColor} text-sm`}>{user?.username}</p>
+                  <p className={`text-xs ${textMuted}`}>View Profile</p>
+                </div>
+              </div>
+              <div className={`flex items-center justify-between py-2 px-3 rounded-lg ${isDark ? 'bg-dark-800' : 'bg-gray-50'}`}>
+                <span className={`text-xs ${textMuted}`}>ELO Rating</span>
+                <span className="text-sm font-bold text-orange-500">{user?.rating || 1200}</span>
+              </div>
+            </div>
+
+            {/* Quick Navigation */}
+            <div className="mb-6">
+              <h3 className={`text-xs font-semibold ${textMuted} uppercase tracking-wider mb-3`}>Quick Links</h3>
+              <nav className="space-y-1">
+                <button
+                  onClick={() => navigate('/dashboard')}
+                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${textColor} hover:bg-orange-500 hover:text-white`}
+                >
+                  <BarChart3 className="w-4 h-4" />
+                  <span className="text-sm font-medium">Dashboard</span>
+                </button>
+                <button
+                  onClick={() => navigate('/matchmaking')}
+                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${textMuted} hover:bg-orange-500 hover:text-white`}
+                >
+                  <Swords className="w-4 h-4" />
+                  <span className="text-sm font-medium">Matchmaking</span>
+                </button>
+                <button
+                  onClick={() => navigate('/problems')}
+                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${textMuted} hover:bg-orange-500 hover:text-white`}
+                >
+                  <BookOpen className="w-4 h-4" />
+                  <span className="text-sm font-medium">Problems</span>
+                </button>
+                <button
+                  onClick={() => navigate('/contests')}
+                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${textMuted} hover:bg-orange-500 hover:text-white`}
+                >
+                  <Trophy className="w-4 h-4" />
+                  <span className="text-sm font-medium">Contests</span>
+                </button>
+                <button
+                  onClick={() => navigate('/challenges')}
+                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${textMuted} hover:bg-orange-500 hover:text-white`}
+                >
+                  <Target className="w-4 h-4" />
+                  <span className="text-sm font-medium">Challenges</span>
+                </button>
+                <button
+                  onClick={() => navigate('/daily-challenge')}
+                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${textMuted} hover:bg-orange-500 hover:text-white`}
+                >
+                  <Calendar className="w-4 h-4" />
+                  <span className="text-sm font-medium">Daily Challenge</span>
+                </button>
+                <button
+                  onClick={() => navigate('/leaderboard')}
+                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${textMuted} hover:bg-orange-500 hover:text-white`}
+                >
+                  <Award className="w-4 h-4" />
+                  <span className="text-sm font-medium">Leaderboard</span>
+                </button>
+                <button
+                  onClick={() => navigate('/submissions')}
+                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${textMuted} hover:bg-orange-500 hover:text-white`}
+                >
+                  <Code2 className="w-4 h-4" />
+                  <span className="text-sm font-medium">Submissions</span>
+                </button>
+              </nav>
+            </div>
+
+            {/* Stats Summary */}
+            <div className={`${cardBg} rounded-xl p-4 border`} style={{ borderColor: isDark ? '#2a2a2a' : '#e5e7eb', borderWidth: '1px' }}>
+              <h3 className={`text-xs font-semibold ${textMuted} uppercase tracking-wider mb-3`}>Your Stats</h3>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className={`text-xs ${textMuted}`}>Wins</span>
+                  <span className={`text-sm font-bold ${textColor}`}>{user?.wins || 0}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className={`text-xs ${textMuted}`}>Matches</span>
+                  <span className={`text-sm font-bold ${textColor}`}>{user?.totalMatches || 0}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className={`text-xs ${textMuted}`}>Win Rate</span>
+                  <span className={`text-sm font-bold ${textColor}`}>{winRate}%</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className={`text-xs ${textMuted}`}>Peak Rating</span>
+                  <span className="text-sm font-bold text-orange-500">{user?.highestRating || user?.rating || 1200}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </aside>
+
+        {/* Main Content */}
+        <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">`
         {/* Welcome Section - TensorFlow Style */}
         <div className="mb-12">
           <h2 className={`text-4xl md:text-5xl font-bold ${textColor} mb-3`}>
@@ -554,6 +668,7 @@ export default function Dashboard() {
           </div>
         </div>
       </main>
+      </div>
     </div>
   );
 }
