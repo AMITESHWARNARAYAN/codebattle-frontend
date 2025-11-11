@@ -8,7 +8,7 @@ import { useExplanationStore } from '../store/explanationStore';
 import Editor from '@monaco-editor/react';
 import { submitCodeNotification, onOpponentSubmitted } from '../utils/socket';
 import { toast } from 'react-hot-toast';
-import { Play, Send, Clock, Flag, Moon, Sun, ExternalLink, Lightbulb, BookOpen, Zap, ChevronLeft, ChevronRight, Settings, Users, Share2, Award, Trophy } from 'lucide-react';
+import { Play, Send, Clock, Flag, Moon, Sun, ExternalLink, Lightbulb, BookOpen, Zap, ChevronLeft, ChevronRight, Settings, Users, Share2, Award, Trophy, Code2, Terminal, Maximize2, Minimize2, RotateCcw } from 'lucide-react';
 
 export default function CodeEditor() {
   const { matchId } = useParams();
@@ -38,6 +38,9 @@ export default function CodeEditor() {
   const [activeTab, setActiveTab] = useState('description'); // description, editorial, solutions, submissions
   const [leftPanelWidth, setLeftPanelWidth] = useState(40);
   const [isDragging, setIsDragging] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [fontSize, setFontSize] = useState(14);
+  const [showSettings, setShowSettings] = useState(false);
   const isContestMode = !!contestId;
 
   // Fetch match or problem data
@@ -288,39 +291,125 @@ export default function CodeEditor() {
 
   return (
     <div className={`h-screen flex flex-col ${isDark ? 'bg-dark-950 text-white' : 'bg-gray-50 text-gray-900'}`}>
-      {/* Top Navigation Bar - LeetCode Style */}
-      <header className={`${isDark ? 'bg-dark-900 border-dark-800' : 'bg-white border-gray-200'} border-b px-3 py-2 flex-shrink-0`}>
+      {/* Top Navigation Bar - TensorFlow Style */}
+      <header className={`${isDark ? 'bg-[#1a1a1a] border-[#2a2a2a]' : 'bg-white border-gray-200'} border-b px-4 py-3 flex-shrink-0 shadow-sm`}>
         <div className="flex items-center justify-between">
           {/* Left: Navigation */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-4">
             <button
               onClick={() => isContestMode ? navigate(`/contests/${contestId}/live`) : navigate('/dashboard')}
-              className={`p-1 rounded hover:${isDark ? 'bg-dark-800' : 'bg-gray-100'}`}
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-colors ${isDark ? 'hover:bg-dark-800 text-gray-300' : 'hover:bg-gray-100 text-gray-700'}`}
             >
               <ChevronLeft className="w-4 h-4" />
+              <span className="text-sm font-medium">Back</span>
             </button>
-            <span className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Problem List</span>
-            <ChevronLeft className="w-3 h-3 rotate-180" />
-            <ChevronRight className="w-3 h-3" />
+            
+            <div className="flex items-center gap-2">
+              <div className="relative">
+                <div className="absolute inset-0 bg-gradient-to-r from-orange-500 to-red-500 rounded-lg blur-sm opacity-50"></div>
+                <div className="relative p-1.5 bg-gradient-to-r from-orange-500 to-red-500 rounded-lg">
+                  <Code2 className="w-4 h-4 text-white" />
+                </div>
+              </div>
+              <div>
+                <h1 className={`text-sm font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                  {problem?.title || 'Loading...'}
+                </h1>
+                <div className="flex items-center gap-2">
+                  <span className={`text-xs px-2 py-0.5 rounded font-medium ${
+                    problem?.difficulty === 'Easy' ? 'bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-300' :
+                    problem?.difficulty === 'Medium' ? 'bg-yellow-100 dark:bg-yellow-900/20 text-yellow-700 dark:text-yellow-300' :
+                    'bg-red-100 dark:bg-red-900/20 text-red-700 dark:text-red-300'
+                  }`}>
+                    {problem?.difficulty}
+                  </span>
+                  {problem?.category && (
+                    <span className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                      {problem.category}
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
           </div>
 
-          {/* Center: Premium & Actions */}
+          {/* Center: Timer (if applicable) */}
+          {match?.matchType === 'solo' && timerEnabled && (
+            <div className={`flex items-center gap-2 px-4 py-1.5 rounded-lg ${isDark ? 'bg-dark-800' : 'bg-gray-100'}`}>
+              <Clock className="w-4 h-4 text-orange-500" />
+              <span className={`text-sm font-medium ${timeLeft < 60 ? 'text-red-500' : isDark ? 'text-white' : 'text-gray-900'}`}>
+                {Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}
+              </span>
+            </div>
+          )}
+
+          {/* Right: Actions */}
           <div className="flex items-center gap-2">
-            <button className={`px-3 py-1 text-xs font-medium rounded ${isDark ? 'bg-yellow-600 hover:bg-yellow-700' : 'bg-yellow-500 hover:bg-yellow-600'} text-white`}>
-              Premium
+            {/* Font Size Controls */}
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => setFontSize(prev => Math.max(12, prev - 2))}
+                className={`p-1.5 rounded transition-colors ${isDark ? 'hover:bg-dark-800 text-gray-300' : 'hover:bg-gray-100 text-gray-700'}`}
+                title="Decrease font size"
+              >
+                <span className="text-xs font-bold">A-</span>
+              </button>
+              <span className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>{fontSize}px</span>
+              <button
+                onClick={() => setFontSize(prev => Math.min(24, prev + 2))}
+                className={`p-1.5 rounded transition-colors ${isDark ? 'hover:bg-dark-800 text-gray-300' : 'hover:bg-gray-100 text-gray-700'}`}
+                title="Increase font size"
+              >
+                <span className="text-xs font-bold">A+</span>
+              </button>
+            </div>
+
+            {/* Reset Code */}
+            <button
+              onClick={() => {
+                const signature = problem?.functionSignature?.[language] || '';
+                setCode(signature);
+                toast.success('Code reset to template');
+              }}
+              className={`p-2 rounded-lg transition-colors ${isDark ? 'hover:bg-dark-800 text-gray-300' : 'hover:bg-gray-100 text-gray-700'}`}
+              title="Reset code"
+            >
+              <RotateCcw className="w-4 h-4" />
             </button>
-            <button className={`p-1.5 rounded hover:${isDark ? 'bg-dark-800' : 'bg-gray-100'}`}>
-              <Play className="w-4 h-4" />
+
+            {/* Fullscreen Toggle */}
+            <button
+              onClick={() => setIsFullscreen(!isFullscreen)}
+              className={`p-2 rounded-lg transition-colors ${isDark ? 'hover:bg-dark-800 text-gray-300' : 'hover:bg-gray-100 text-gray-700'}`}
+              title={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
+            >
+              {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
             </button>
+
+            {/* Theme Toggle */}
             <button
               onClick={toggleTheme}
-              className={`p-1.5 rounded hover:${isDark ? 'bg-dark-800' : 'bg-gray-100'}`}
+              className={`p-2 rounded-lg transition-colors ${isDark ? 'hover:bg-dark-800 text-gray-300' : 'hover:bg-gray-100 text-gray-700'}`}
+              title="Toggle theme"
             >
               {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
             </button>
-            <button className={`px-3 py-1.5 text-xs font-medium rounded ${isDark ? 'bg-green-700 hover:bg-green-800' : 'bg-green-600 hover:bg-green-700'} text-white`}>
-              Submit
-            </button>
+
+            {/* Language Selector */}
+            <select
+              value={language}
+              onChange={(e) => setLanguage(e.target.value)}
+              className={`px-3 py-1.5 rounded-lg text-sm font-medium border transition-colors ${
+                isDark 
+                  ? 'bg-dark-800 border-dark-700 text-white hover:bg-dark-700' 
+                  : 'bg-white border-gray-300 text-gray-900 hover:bg-gray-50'
+              }`}
+            >
+              <option value="cpp">C++</option>
+              <option value="python">Python</option>
+              <option value="java">Java</option>
+              <option value="javascript">JavaScript</option>
+            </select>
           </div>
         </div>
       </header>
@@ -531,19 +620,17 @@ export default function CodeEditor() {
         {/* Right Panel - Code Editor */}
         <div className={`flex-1 flex flex-col ${isDark ? 'bg-dark-950' : 'bg-white'}`}>
           {/* Code Tab */}
-          <div className={`flex items-center justify-between border-b ${isDark ? 'border-dark-800' : 'border-gray-200'} px-4 flex-shrink-0`}>
-            <div className="flex items-center">
-              <button className={`px-3 py-2.5 text-sm font-medium border-b-2 -mb-px ${isDark ? 'border-blue-500 text-white' : 'border-blue-500 text-gray-900'}`}>
+          <div className={`flex items-center justify-between border-b ${isDark ? 'border-dark-800 bg-[#1a1a1a]' : 'border-gray-200 bg-gray-50'} px-4 flex-shrink-0`}>
+            <div className="flex items-center gap-2">
+              <Terminal className={`w-4 h-4 ${isDark ? 'text-orange-500' : 'text-orange-600'}`} />
+              <button className={`px-3 py-2.5 text-sm font-medium border-b-2 -mb-px ${isDark ? 'border-orange-500 text-white' : 'border-orange-500 text-gray-900'}`}>
                 Code
               </button>
             </div>
             <div className="flex items-center gap-2">
-              <div className={`px-3 py-1 text-xs rounded ${isDark ? 'bg-dark-800 text-white' : 'bg-gray-100 text-gray-900'}`}>
-                C++
-              </div>
-              <button className={`p-1 rounded hover:${isDark ? 'bg-dark-800' : 'bg-gray-100'}`}>
-                <Settings className="w-4 h-4" />
-              </button>
+              <span className={`text-xs px-2 py-1 rounded ${isDark ? 'bg-dark-800 text-white' : 'bg-gray-100 text-gray-900'}`}>
+                {language === 'cpp' ? 'C++' : language === 'python' ? 'Python' : language === 'java' ? 'Java' : 'JavaScript'}
+              </span>
             </div>
           </div>
 
@@ -556,13 +643,28 @@ export default function CodeEditor() {
               onChange={(value) => setCode(value || '')}
               theme={isDark ? 'vs-dark' : 'vs-light'}
               options={{
-                minimap: { enabled: false },
-                fontSize: 13,
-                fontFamily: "'Consolas', 'Monaco', 'Courier New', monospace",
+                minimap: { enabled: !isFullscreen },
+                fontSize: fontSize,
+                fontFamily: "'Fira Code', 'Consolas', 'Monaco', 'Courier New', monospace",
                 lineNumbers: 'on',
                 scrollBeyondLastLine: false,
                 automaticLayout: true,
-                padding: { top: 12, bottom: 12 }
+                padding: { top: 16, bottom: 16 },
+                lineHeight: fontSize + 8,
+                cursorBlinking: 'smooth',
+                cursorSmoothCaretAnimation: 'on',
+                smoothScrolling: true,
+                wordWrap: 'on',
+                formatOnPaste: true,
+                formatOnType: true,
+                suggest: {
+                  enabled: true,
+                },
+                quickSuggestions: true,
+                tabSize: 2,
+                bracketPairColorization: {
+                  enabled: true,
+                },
               }}
             />
           </div>
@@ -674,30 +776,40 @@ export default function CodeEditor() {
             )}
           </div>
 
-          {/* Bottom Action Bar */}
-          <div className={`border-t px-4 py-2 flex gap-2 flex-shrink-0 ${isDark ? 'bg-dark-900 border-dark-800' : 'bg-white border-gray-200'}`}>
+          {/* Bottom Action Bar - TensorFlow Style */}
+          <div className={`border-t px-6 py-3 flex gap-3 flex-shrink-0 ${isDark ? 'bg-[#1a1a1a] border-[#2a2a2a]' : 'bg-white border-gray-200'}`}>
             <button
               onClick={handleSubmit}
               disabled={submitting || (!isContestMode && timeLeft === 0)}
-              className={`px-4 py-1.5 rounded text-sm font-medium flex items-center justify-center gap-2 ${
+              className={`px-5 py-2 rounded-lg text-sm font-medium flex items-center justify-center gap-2 transition-all ${
                 submitting || (!isContestMode && timeLeft === 0)
                   ? 'bg-gray-600 text-gray-300 cursor-not-allowed'
-                  : isDark ? 'bg-dark-800 hover:bg-dark-700 text-white' : 'bg-white hover:bg-gray-50 text-gray-900 border border-gray-300'
+                  : isDark ? 'bg-dark-800 hover:bg-dark-700 text-white border border-dark-700' : 'bg-white hover:bg-gray-50 text-gray-900 border border-gray-300'
               }`}
             >
               <Play className="w-4 h-4" />
-              Run
+              <span>Run Code</span>
             </button>
             <button
               onClick={handleSubmit}
               disabled={submitting || (!isContestMode && timeLeft === 0)}
-              className={`px-4 py-1.5 rounded text-sm font-medium flex items-center justify-center gap-2 flex-1 ${
+              className={`px-5 py-2 rounded-lg text-sm font-medium flex items-center justify-center gap-2 flex-1 transition-all shadow-lg ${
                 submitting || (!isContestMode && timeLeft === 0)
-                  ? 'bg-green-800 text-green-300 cursor-not-allowed'
-                  : 'bg-green-600 hover:bg-green-700 text-white'
+                  ? 'bg-gray-600 text-gray-300 cursor-not-allowed'
+                  : 'bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white'
               }`}
             >
-              {submitting ? 'Submitting...' : 'Submit'}
+              {submitting ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  <span>Submitting...</span>
+                </>
+              ) : (
+                <>
+                  <Send className="w-4 h-4" />
+                  <span>Submit Solution</span>
+                </>
+              )}
             </button>
           </div>
         </div>
