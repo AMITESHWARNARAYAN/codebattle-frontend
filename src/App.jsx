@@ -33,6 +33,7 @@ import ContestLive from './pages/ContestLive';
 import Notifications from './pages/Notifications';
 import Resources from './pages/Resources';
 import AdminResources from './pages/AdminResources';
+import CodeEditorNew from './pages/CodeEditorNew';
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
@@ -130,6 +131,7 @@ function AppRoutes() {
         <Route path="/match/join/:inviteCode" element={<ProtectedRoute><JoinChallenge /></ProtectedRoute>} />
         <Route path="/match/:matchId" element={<ProtectedRoute><CodeEditor /></ProtectedRoute>} />
         <Route path="/code-editor/:problemId" element={<ProtectedRoute><CodeEditor /></ProtectedRoute>} />
+        <Route path="/problem/:problemId" element={<ProtectedRoute><CodeEditorNew /></ProtectedRoute>} />
         <Route path="/results/:matchId" element={<ProtectedRoute><Results /></ProtectedRoute>} />
         <Route path="/leaderboard" element={<ProtectedRoute><Leaderboard /></ProtectedRoute>} />
         <Route path="/profile/:username" element={<ProtectedRoute><Profile /></ProtectedRoute>} />

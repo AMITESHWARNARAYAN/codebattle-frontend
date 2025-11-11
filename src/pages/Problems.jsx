@@ -137,7 +137,7 @@ export default function Problems() {
   };
 
   const handleProblemClick = (problemId) => {
-    navigate(`/match/solo?problemId=${problemId}`);
+    navigate(`/problem/${problemId}`);
   };
 
   const getDifficultyColor = (difficulty) => {
