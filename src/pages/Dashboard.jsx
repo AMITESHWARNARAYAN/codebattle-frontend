@@ -144,47 +144,87 @@ export default function Dashboard() {
     <div className="min-h-screen" style={{ backgroundColor: bgColor }}>
       {/* Header - TensorFlow Style */}
       <header className={`${cardBg} border-b ${borderColor} sticky top-0 z-50`} style={{ borderBottomWidth: '1px', borderBottomColor: isDark ? '#2a2a2a' : '#e5e7eb' }}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3 cursor-pointer" onClick={() => navigate('/dashboard')}>
-            <div className="relative">
-              <div className="absolute inset-0 bg-gradient-to-r from-orange-500 to-red-500 rounded-lg blur-sm opacity-50"></div>
-              <div className="relative p-2 bg-gradient-to-r from-orange-500 to-red-500 rounded-lg shadow-lg">
-                <Code2 className="w-5 h-5 text-white" />
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <div className="flex items-center justify-between">
+            {/* Logo and Navigation */}
+            <div className="flex items-center gap-8">
+              <div className="flex items-center gap-3 cursor-pointer" onClick={() => navigate('/dashboard')}>
+                <div className="relative">
+                  <div className="absolute inset-0 bg-gradient-to-r from-orange-500 to-red-500 rounded-lg blur-sm opacity-50"></div>
+                  <div className="relative p-2 bg-gradient-to-r from-orange-500 to-red-500 rounded-lg shadow-lg">
+                    <Code2 className="w-5 h-5 text-white" />
+                  </div>
+                </div>
+                <h1 className={`text-xl font-bold ${textColor}`}>
+                  CodeBattle
+                </h1>
               </div>
+              
+              {/* Navigation Links */}
+              <nav className="hidden lg:flex items-center gap-6">
+                <button
+                  onClick={() => navigate('/problems')}
+                  className={`text-sm font-medium transition-colors ${textMuted} hover:text-orange-500`}
+                >
+                  Problems
+                </button>
+                <button
+                  onClick={() => navigate('/contests')}
+                  className={`text-sm font-medium transition-colors ${textMuted} hover:text-orange-500`}
+                >
+                  Contests
+                </button>
+                <button
+                  onClick={() => navigate('/challenges')}
+                  className={`text-sm font-medium transition-colors ${textMuted} hover:text-orange-500`}
+                >
+                  Challenges
+                </button>
+                <button
+                  onClick={() => navigate('/leaderboard')}
+                  className={`text-sm font-medium transition-colors ${textMuted} hover:text-orange-500`}
+                >
+                  Leaderboard
+                </button>
+                <button
+                  onClick={() => navigate('/discussions')}
+                  className={`text-sm font-medium transition-colors ${textMuted} hover:text-orange-500`}
+                >
+                  Community
+                </button>
+              </nav>
             </div>
-            <h1 className={`text-xl font-bold ${textColor}`}>
-              CodeBattle
-            </h1>
-          </div>
-          
-          <div className="flex items-center gap-3">
-            <div className={`hidden md:flex items-center gap-2 px-3 py-1.5 rounded-lg border ${isDark ? 'bg-dark-800 border-dark-700' : 'bg-gray-50 border-gray-200'}`}>
-              <span className={`${textColor} font-medium text-sm`}>{user?.username}</span>
-            </div>
-            <NotificationBell />
-            <ThemeToggle />
-            {user?.isAdmin && (
+            
+            {/* Right Side Actions */}
+            <div className="flex items-center gap-3">
+              <div className={`hidden md:flex items-center gap-2 px-3 py-1.5 rounded-lg border ${isDark ? 'bg-dark-800 border-dark-700' : 'bg-gray-50 border-gray-200'}`}>
+                <span className={`${textColor} font-medium text-sm`}>{user?.username}</span>
+              </div>
+              <NotificationBell />
+              <ThemeToggle />
+              {user?.isAdmin && (
+                <button
+                  onClick={() => navigate('/admin')}
+                  className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white rounded-lg transition font-medium text-sm shadow-lg"
+                >
+                  <Settings className="w-4 h-4" />
+                  <span className="hidden md:inline">Admin</span>
+                </button>
+              )}
               <button
-                onClick={() => navigate('/admin')}
-                className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white rounded-lg transition font-medium text-sm shadow-lg"
+                onClick={handleLogout}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg transition font-medium text-sm border ${isDark ? 'bg-dark-800 hover:bg-dark-700 border-dark-700 text-white' : 'bg-gray-100 hover:bg-gray-200 border-gray-200 text-gray-900'}`}
               >
-                <Settings className="w-4 h-4" />
-                <span className="hidden md:inline">Admin</span>
+                <LogOut className="w-4 h-4" />
+                <span className="hidden md:inline">Logout</span>
               </button>
-            )}
-            <button
-              onClick={handleLogout}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg transition font-medium text-sm border ${isDark ? 'bg-dark-800 hover:bg-dark-700 border-dark-700 text-white' : 'bg-gray-100 hover:bg-gray-200 border-gray-200 text-gray-900'}`}
-            >
-              <LogOut className="w-4 h-4" />
-              <span className="hidden md:inline">Logout</span>
-            </button>
+            </div>
           </div>
         </div>
       </header>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">`
         {/* Welcome Section - TensorFlow Style */}
         <div className="mb-12">
           <h2 className={`text-4xl md:text-5xl font-bold ${textColor} mb-3`}>
