@@ -302,13 +302,6 @@ export default function Dashboard() {
                   <span className="text-sm font-medium">Daily Challenge</span>
                 </button>
                 <button
-                  onClick={() => navigate('/resources')}
-                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${textMuted} hover:bg-orange-500 hover:text-white`}
-                >
-                  <BookOpen className="w-4 h-4" />
-                  <span className="text-sm font-medium">Resources</span>
-                </button>
-                <button
                   onClick={() => navigate('/leaderboard')}
                   className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${textMuted} hover:bg-orange-500 hover:text-white`}
                 >
