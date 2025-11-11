@@ -7,8 +7,9 @@ import { toast } from 'react-hot-toast';
 import { 
   Play, Send, ChevronLeft, ChevronRight, ChevronDown, Settings, 
   Clock, CheckCircle2, XCircle, Loader2, Code2, FileText, 
-  MessageSquare, BarChart3, Lightbulb, BookOpen, ThumbsUp,
-  Share2, Star, Eye, EyeOff, RotateCcw, Maximize2, Minimize2
+  MessageSquare, BarChart3, Lightbulb, BookOpen, ThumbsUp, ThumbsDown,
+  Share2, Star, Eye, EyeOff, RotateCcw, Maximize2, Minimize2, Shuffle,
+  ExternalLink, Menu, Users, Bookmark, Info, ListOrdered
 } from 'lucide-react';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
@@ -46,9 +47,14 @@ export default function CodeEditorNew() {
   
   // Problem metadata
   const [liked, setLiked] = useState(false);
+  const [disliked, setDisliked] = useState(false);
   const [bookmarked, setBookmarked] = useState(false);
   const [showHints, setShowHints] = useState(false);
   const [unlockedHints, setUnlockedHints] = useState([]);
+  const [likeCount, setLikeCount] = useState(9300);
+  const [commentCount, setCommentCount] = useState(204);
+  const [autoSave, setAutoSave] = useState(true);
+  const [lastSaved, setLastSaved] = useState('Saved');
 
   // Layout
   const [leftWidth, setLeftWidth] = useState(50);
@@ -167,17 +173,46 @@ export default function CodeEditorNew() {
   const getDifficultyColor = (difficulty) => {
     switch (difficulty) {
       case 'Easy': return isDark ? 'text-green-400' : 'text-green-600';
-      case 'Medium': return isDark ? 'text-yellow-400' : 'text-yellow-600';
+      case 'Medium': return isDark ? 'text-yellow-500' : 'text-yellow-600';
       case 'Hard': return isDark ? 'text-red-400' : 'text-red-600';
       default: return isDark ? 'text-gray-400' : 'text-gray-600';
     }
   };
 
+  const handleLike = () => {
+    if (!liked) {
+      setLiked(true);
+      setDisliked(false);
+      setLikeCount(prev => prev + 1);
+    } else {
+      setLiked(false);
+      setLikeCount(prev => prev - 1);
+    }
+  };
+
+  const handleDislike = () => {
+    if (!disliked) {
+      setDisliked(true);
+      setLiked(false);
+      if (liked) setLikeCount(prev => prev - 1);
+    } else {
+      setDisliked(false);
+    }
+  };
+
+  const formatLikeCount = (count) => {
+    if (count >= 1000) {
+      return (count / 1000).toFixed(1) + 'K';
+    }
+    return count;
+  };
+
   const bgColor = isDark ? 'bg-[#1a1a1a]' : 'bg-white';
-  const borderColor = isDark ? 'border-gray-800' : 'border-gray-200';
+  const bgSecondary = isDark ? 'bg-[#262626]' : 'bg-gray-50';
+  const borderColor = isDark ? 'border-[#333333]' : 'border-gray-200';
   const textColor = isDark ? 'text-gray-100' : 'text-gray-900';
   const mutedText = isDark ? 'text-gray-400' : 'text-gray-600';
-  const hoverBg = isDark ? 'hover:bg-gray-800' : 'hover:bg-gray-100';
+  const hoverBg = isDark ? 'hover:bg-[#262626]' : 'hover:bg-gray-100';
 
   if (loading) {
     return (
@@ -189,57 +224,83 @@ export default function CodeEditorNew() {
 
   return (
     <div className={`h-screen flex flex-col ${bgColor} ${textColor}`}>
-      {/* Header */}
-      <header className={`border-b ${borderColor} px-4 py-2 flex items-center justify-between`}>
-        <div className="flex items-center gap-4">
+      {/* Top Navigation Bar */}
+      <header className={`border-b ${borderColor} px-3 py-2 flex items-center justify-between`}>
+        <div className="flex items-center gap-3">
+          {/* Logo/Back */}
           <button
             onClick={() => navigate('/problems')}
-            className={`${hoverBg} p-2 rounded-lg transition`}
+            className={`${hoverBg} p-1.5 rounded transition`}
           >
-            <ChevronLeft className="w-5 h-5" />
+            <Code2 className="w-5 h-5 text-orange-500" />
           </button>
-          <div className="flex items-center gap-3">
-            <h1 className={`text-lg font-semibold ${textColor}`}>
-              {problem?.title}
-            </h1>
-            <span className={`text-sm font-medium ${getDifficultyColor(problem?.difficulty)}`}>
-              {problem?.difficulty}
-            </span>
+
+          {/* Problem Navigation */}
+          <div className="flex items-center gap-1">
+            <button
+              className={`${hoverBg} p-1.5 rounded transition`}
+              title="Previous Problem"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+            <button
+              className={`${hoverBg} p-1.5 rounded transition`}
+              title="Problem List"
+            >
+              <Menu className="w-4 h-4" />
+            </button>
+            <button
+              className={`${hoverBg} p-1.5 rounded transition`}
+              title="Next Problem"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
           </div>
+
+          {/* Random Problem */}
+          <button
+            className={`${hoverBg} p-1.5 rounded transition`}
+            title="Random Problem"
+          >
+            <Shuffle className="w-4 h-4" />
+          </button>
         </div>
 
+        {/* Right Side Actions */}
         <div className="flex items-center gap-2">
-          {/* Like */}
-          <button
-            onClick={() => setLiked(!liked)}
-            className={`${hoverBg} p-2 rounded-lg transition ${liked ? 'text-blue-500' : mutedText}`}
-          >
-            <ThumbsUp className="w-5 h-5" fill={liked ? 'currentColor' : 'none'} />
+          {/* Premium Badge */}
+          <button className="px-3 py-1 bg-gradient-to-r from-yellow-400 to-orange-400 text-gray-900 rounded text-xs font-semibold">
+            Premium
           </button>
 
-          {/* Bookmark */}
-          <button
-            onClick={() => setBookmarked(!bookmarked)}
-            className={`${hoverBg} p-2 rounded-lg transition ${bookmarked ? 'text-yellow-500' : mutedText}`}
-          >
-            <Star className="w-5 h-5" fill={bookmarked ? 'currentColor' : 'none'} />
+          {/* Icons */}
+          <button className={`${hoverBg} p-1.5 rounded transition`}>
+            <Users className="w-4 h-4" />
+          </button>
+          
+          <button className={`${hoverBg} p-1.5 rounded transition`}>
+            <Settings className="w-4 h-4" />
           </button>
 
-          {/* Settings */}
-          <button
-            onClick={() => setShowSettings(!showSettings)}
-            className={`${hoverBg} p-2 rounded-lg transition`}
-          >
-            <Settings className="w-5 h-5" />
-          </button>
-
-          {/* Fullscreen */}
-          <button
+          <button 
             onClick={() => setIsFullscreen(!isFullscreen)}
-            className={`${hoverBg} p-2 rounded-lg transition`}
+            className={`${hoverBg} p-1.5 rounded transition`}
           >
-            {isFullscreen ? <Minimize2 className="w-5 h-5" /> : <Maximize2 className="w-5 h-5" />}
+            {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
           </button>
+
+          <div className={`${hoverBg} p-1.5 rounded cursor-pointer`}>
+            <span className="text-sm font-medium">0</span>
+          </div>
+
+          <button className={`${hoverBg} p-1.5 rounded transition`}>
+            <Clock className="w-4 h-4" />
+          </button>
+
+          {/* Avatar */}
+          <div className="w-7 h-7 rounded-full bg-gradient-to-br from-orange-500 to-red-500 flex items-center justify-center text-white text-xs font-bold">
+            A
+          </div>
         </div>
       </header>
 
@@ -252,154 +313,233 @@ export default function CodeEditorNew() {
         >
           {/* Tabs */}
           <div className={`border-b ${borderColor} flex`}>
-            {['Description', 'Editorial', 'Solutions', 'Submissions'].map((tab) => (
-              <button
-                key={tab}
-                onClick={() => setLeftPanelTab(tab.toLowerCase())}
-                className={`px-4 py-3 text-sm font-medium border-b-2 transition ${
-                  leftPanelTab === tab.toLowerCase()
-                    ? 'border-orange-500 text-orange-500'
-                    : `border-transparent ${mutedText} ${hoverBg}`
-                }`}
-              >
-                {tab}
-              </button>
-            ))}
+            {[
+              { id: 'description', label: 'Description', icon: FileText },
+              { id: 'editorial', label: 'Editorial', icon: BookOpen },
+              { id: 'solutions', label: 'Solutions', icon: Users },
+              { id: 'submissions', label: 'Submissions', icon: ListOrdered }
+            ].map((tab) => {
+              const Icon = tab.icon;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setLeftPanelTab(tab.id)}
+                  className={`px-4 py-2.5 text-sm font-medium border-b-2 transition flex items-center gap-2 ${
+                    leftPanelTab === tab.id
+                      ? 'border-blue-500 text-blue-500'
+                      : `border-transparent ${mutedText} ${hoverBg}`
+                  }`}
+                >
+                  <Icon className="w-4 h-4" />
+                  {tab.label}
+                </button>
+              );
+            })}
           </div>
 
           {/* Tab Content */}
-          <div className="flex-1 overflow-y-auto p-4">
+          <div className="flex-1 overflow-y-auto">
             {leftPanelTab === 'description' && (
-              <div className="space-y-6">
-                {/* Problem Description */}
+              <div className="p-4 space-y-4">
+                {/* Problem Title */}
                 <div>
-                  <p className="text-sm leading-relaxed">{problem?.description}</p>
+                  <h1 className={`text-xl font-semibold mb-3 ${textColor}`}>
+                    {problem?.title}
+                  </h1>
+                  
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {/* Difficulty Badge */}
+                    <span className={`text-sm font-medium px-2.5 py-0.5 rounded-full ${
+                      problem?.difficulty === 'Easy' 
+                        ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' 
+                        : problem?.difficulty === 'Medium'
+                        ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
+                        : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                    }`}>
+                      {problem?.difficulty}
+                    </span>
+
+                    {/* Topics */}
+                    {problem?.tags && problem.tags.length > 0 && (
+                      <>
+                        <span className={`text-xs ${mutedText}`}>Topics</span>
+                        {problem.tags.slice(0, 3).map((tag, idx) => (
+                          <span
+                            key={idx}
+                            className={`text-xs px-2 py-0.5 rounded ${bgSecondary} ${mutedText} hover:bg-gray-200 dark:hover:bg-gray-700 cursor-pointer transition`}
+                          >
+                            {tag}
+                          </span>
+                        ))}
+                      </>
+                    )}
+
+                    {/* Companies */}
+                    {problem?.companyTags && problem.companyTags.length > 0 && (
+                      <>
+                        <span className={`text-xs ${mutedText}`}>Companies</span>
+                        {problem.companyTags.slice(0, 3).map((company, idx) => (
+                          <span
+                            key={idx}
+                            className={`text-xs px-2 py-0.5 rounded ${bgSecondary} ${mutedText} hover:bg-gray-200 dark:hover:bg-gray-700 cursor-pointer transition`}
+                          >
+                            {company}
+                          </span>
+                        ))}
+                      </>
+                    )}
+                  </div>
+                </div>
+
+                {/* Problem Description */}
+                <div className="text-sm leading-relaxed space-y-4">
+                  <p>{problem?.description}</p>
                 </div>
 
                 {/* Examples */}
-                {problem?.examples?.map((example, idx) => (
-                  <div key={idx} className={`${isDark ? 'bg-gray-900' : 'bg-gray-50'} rounded-lg p-4`}>
-                    <p className="text-sm font-semibold mb-2">Example {idx + 1}:</p>
-                    <div className="space-y-2 text-sm font-mono">
-                      <div>
-                        <span className={mutedText}>Input:</span> {example.input}
-                      </div>
-                      <div>
-                        <span className={mutedText}>Output:</span> {example.output}
-                      </div>
-                      {example.explanation && (
+                <div className="space-y-4">
+                  {problem?.examples?.map((example, idx) => (
+                    <div key={idx}>
+                      <p className="text-sm font-semibold mb-2">Example {idx + 1}:</p>
+                      <div className={`${bgSecondary} rounded-lg p-3 space-y-2 text-sm font-mono`}>
                         <div>
-                          <span className={mutedText}>Explanation:</span> {example.explanation}
+                          <span className="font-semibold">Input:</span> {example.input}
                         </div>
-                      )}
+                        <div>
+                          <span className="font-semibold">Output:</span> {example.output}
+                        </div>
+                        {example.explanation && (
+                          <div>
+                            <span className="font-semibold">Explanation:</span> {example.explanation}
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
 
                 {/* Constraints */}
                 {problem?.constraints && (
                   <div>
                     <h3 className="text-sm font-semibold mb-2">Constraints:</h3>
-                    <ul className="text-sm space-y-1 list-disc list-inside">
+                    <ul className={`text-sm space-y-1 ${mutedText} font-mono`}>
                       {problem.constraints.split(',').map((constraint, idx) => (
-                        <li key={idx} className={mutedText}>{constraint.trim()}</li>
+                        <li key={idx} className="ml-4">• {constraint.trim()}</li>
                       ))}
                     </ul>
                   </div>
                 )}
-
-                {/* Topics */}
-                {problem?.tags && problem.tags.length > 0 && (
-                  <div>
-                    <h3 className="text-sm font-semibold mb-2">Topics:</h3>
-                    <div className="flex flex-wrap gap-2">
-                      {problem.tags.map((tag, idx) => (
-                        <span
-                          key={idx}
-                          className={`px-3 py-1 text-xs rounded-full ${
-                            isDark ? 'bg-gray-800 text-gray-300' : 'bg-gray-200 text-gray-700'
-                          }`}
-                        >
-                          {tag}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Hints */}
-                <div>
-                  <button
-                    onClick={() => setShowHints(!showHints)}
-                    className={`flex items-center gap-2 text-sm font-semibold ${hoverBg} px-3 py-2 rounded-lg transition`}
-                  >
-                    <Lightbulb className="w-4 h-4" />
-                    Hints ({unlockedHints.length}/3)
-                    <ChevronRight className={`w-4 h-4 transition-transform ${showHints ? 'rotate-90' : ''}`} />
-                  </button>
-                  
-                  {showHints && (
-                    <div className="mt-2 space-y-2">
-                      {[0, 1, 2].map((idx) => (
-                        <div
-                          key={idx}
-                          className={`${isDark ? 'bg-gray-900' : 'bg-gray-50'} rounded-lg p-3`}
-                        >
-                          {unlockedHints.includes(idx) ? (
-                            <p className="text-sm">Hint {idx + 1}: Think about using hash maps...</p>
-                          ) : (
-                            <button
-                              onClick={() => setUnlockedHints([...unlockedHints, idx])}
-                              className="text-sm text-orange-500 hover:text-orange-600 flex items-center gap-2"
-                            >
-                              <EyeOff className="w-4 h-4" />
-                              Unlock Hint {idx + 1}
-                            </button>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
               </div>
             )}
 
             {leftPanelTab === 'editorial' && (
-              <div className="space-y-4">
-                <h2 className="text-lg font-bold">Official Editorial</h2>
-                <p className={`text-sm ${mutedText}`}>
-                  Editorial will be available after you solve this problem or unlock it.
-                </p>
-                <button className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg text-sm font-medium transition">
-                  Unlock Editorial (Premium)
-                </button>
+              <div className="p-4 space-y-4">
+                <h2 className="text-lg font-bold">Editorial</h2>
+                <div className={`${bgSecondary} rounded-lg p-6 text-center`}>
+                  <BookOpen className="w-12 h-12 mx-auto mb-3 text-orange-500" />
+                  <p className={`text-sm ${mutedText} mb-4`}>
+                    Premium editorial available
+                  </p>
+                  <button className="px-4 py-2 bg-gradient-to-r from-yellow-400 to-orange-400 hover:from-yellow-500 hover:to-orange-500 text-gray-900 rounded-lg text-sm font-semibold transition">
+                    Unlock Premium
+                  </button>
+                </div>
               </div>
             )}
 
             {leftPanelTab === 'solutions' && (
-              <div className="space-y-4">
+              <div className="p-4 space-y-4">
                 <div className="flex items-center justify-between">
                   <h2 className="text-lg font-bold">Solutions</h2>
-                  <select className={`px-3 py-1.5 text-sm rounded-lg border ${borderColor} ${bgColor}`}>
-                    <option>Most Voted</option>
+                  <select className={`px-3 py-1.5 text-xs rounded border ${borderColor} ${bgColor}`}>
+                    <option>Most Votes</option>
                     <option>Most Recent</option>
-                    <option>Fastest Runtime</option>
+                    <option>Top Runtime</option>
                   </select>
                 </div>
-                <p className={`text-sm ${mutedText}`}>
-                  Community solutions will appear here after you solve the problem.
-                </p>
+                <div className={`${bgSecondary} rounded-lg p-6 text-center`}>
+                  <Users className="w-12 h-12 mx-auto mb-3 text-blue-500" />
+                  <p className={`text-sm ${mutedText}`}>
+                    Solve the problem to unlock community solutions
+                  </p>
+                </div>
               </div>
             )}
 
             {leftPanelTab === 'submissions' && (
-              <div className="space-y-4">
-                <h2 className="text-lg font-bold">My Submissions</h2>
-                <p className={`text-sm ${mutedText}`}>
-                  Your submission history will appear here.
-                </p>
+              <div className="p-4 space-y-4">
+                <h2 className="text-lg font-bold">Submissions</h2>
+                <div className={`${bgSecondary} rounded-lg p-6 text-center`}>
+                  <ListOrdered className="w-12 h-12 mx-auto mb-3 text-green-500" />
+                  <p className={`text-sm ${mutedText}`}>
+                    Your submissions will appear here
+                  </p>
+                </div>
               </div>
             )}
+          </div>
+
+          {/* Bottom Actions Bar */}
+          <div className={`border-t ${borderColor} px-4 py-2.5 flex items-center justify-between text-sm`}>
+            <div className="flex items-center gap-3">
+              {/* Like */}
+              <button
+                onClick={handleLike}
+                className={`flex items-center gap-1.5 ${hoverBg} px-2 py-1 rounded transition ${
+                  liked ? 'text-blue-500' : mutedText
+                }`}
+              >
+                <ThumbsUp className="w-4 h-4" fill={liked ? 'currentColor' : 'none'} />
+                <span className="font-medium">{formatLikeCount(likeCount)}</span>
+              </button>
+
+              {/* Dislike */}
+              <button
+                onClick={handleDislike}
+                className={`${hoverBg} p-1 rounded transition ${
+                  disliked ? 'text-red-500' : mutedText
+                }`}
+              >
+                <ThumbsDown className="w-4 h-4" fill={disliked ? 'currentColor' : 'none'} />
+              </button>
+
+              {/* Comments */}
+              <button className={`flex items-center gap-1.5 ${hoverBg} px-2 py-1 rounded transition ${mutedText}`}>
+                <MessageSquare className="w-4 h-4" />
+                <span className="font-medium">{commentCount}</span>
+              </button>
+
+              {/* Bookmark */}
+              <button
+                onClick={() => setBookmarked(!bookmarked)}
+                className={`${hoverBg} p-1 rounded transition ${
+                  bookmarked ? 'text-yellow-500' : mutedText
+                }`}
+              >
+                <Star className="w-4 h-4" fill={bookmarked ? 'currentColor' : 'none'} />
+              </button>
+
+              {/* Share */}
+              <button className={`${hoverBg} p-1 rounded transition ${mutedText}`}>
+                <Share2 className="w-4 h-4" />
+              </button>
+
+              {/* External Link */}
+              <button className={`${hoverBg} p-1 rounded transition ${mutedText}`}>
+                <ExternalLink className="w-4 h-4" />
+              </button>
+
+              {/* Info */}
+              <button className={`${hoverBg} p-1 rounded transition ${mutedText}`}>
+                <Info className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Online Count */}
+            <div className="flex items-center gap-1.5 text-xs">
+              <div className="w-2 h-2 rounded-full bg-green-500"></div>
+              <span className={mutedText}>39 Online</span>
+            </div>
           </div>
         </div>
 
@@ -428,47 +568,73 @@ export default function CodeEditorNew() {
 
         {/* Right Panel - Code Editor */}
         <div className="flex-1 flex flex-col overflow-hidden">
-          {/* Editor Toolbar */}
+          {/* Code Tab Header */}
           <div className={`border-b ${borderColor} px-4 py-2 flex items-center justify-between`}>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2">
+                <Code2 className="w-4 h-4" />
+                <span className="text-sm font-medium">Code</span>
+              </div>
+            </div>
+            
+            <div className="flex items-center gap-3">
               {/* Language Selector */}
               <select
                 value={language}
                 onChange={(e) => setLanguage(e.target.value)}
-                className={`px-3 py-1.5 text-sm rounded-lg border ${borderColor} ${bgColor} font-medium`}
+                className={`px-3 py-1 text-sm rounded border ${borderColor} ${bgColor} font-medium cursor-pointer`}
               >
                 <option value="cpp">C++</option>
                 <option value="java">Java</option>
-                <option value="python">Python</option>
+                <option value="python">Python3</option>
                 <option value="javascript">JavaScript</option>
               </select>
-            </div>
 
+              {/* Auto Toggle */}
+              <div className="flex items-center gap-2">
+                <button className={`flex items-center gap-1 px-2 py-1 text-xs ${bgSecondary} rounded ${mutedText}`}>
+                  <Settings className="w-3 h-3" />
+                  Auto
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Editor Toolbar */}
+          <div className={`border-b ${borderColor} px-4 py-1.5 flex items-center justify-between text-xs`}>
             <div className="flex items-center gap-2">
               {/* Font Size */}
               <div className="flex items-center gap-1">
                 <button
                   onClick={() => setFontSize(Math.max(12, fontSize - 2))}
-                  className={`${hoverBg} px-2 py-1 rounded text-sm font-medium`}
+                  className={`${hoverBg} px-2 py-0.5 rounded font-medium`}
                 >
                   A-
                 </button>
-                <span className="text-sm px-2">{fontSize}px</span>
+                <span className="px-1 text-xs">{fontSize}</span>
                 <button
                   onClick={() => setFontSize(Math.min(24, fontSize + 2))}
-                  className={`${hoverBg} px-2 py-1 rounded text-sm font-medium`}
+                  className={`${hoverBg} px-2 py-0.5 rounded font-medium`}
                 >
                   A+
                 </button>
               </div>
+            </div>
 
-              {/* Reset */}
-              <button
+            <div className="flex items-center gap-2">
+              {/* Icons */}
+              <button className={`${hoverBg} p-1 rounded transition`} title="Settings">
+                <Settings className="w-3.5 h-3.5" />
+              </button>
+              <button className={`${hoverBg} p-1 rounded transition`} title="Fullscreen">
+                <Maximize2 className="w-3.5 h-3.5" />
+              </button>
+              <button 
                 onClick={handleReset}
-                className={`${hoverBg} p-2 rounded-lg transition`}
-                title="Reset Code"
+                className={`${hoverBg} p-1 rounded transition`} 
+                title="Reset"
               >
-                <RotateCcw className="w-4 h-4" />
+                <RotateCcw className="w-3.5 h-3.5" />
               </button>
             </div>
           </div>
@@ -488,7 +654,7 @@ export default function CodeEditorNew() {
                 wordWrap: 'on',
                 automaticLayout: true,
                 tabSize: 4,
-                fontFamily: "'Fira Code', 'Consolas', 'Monaco', monospace",
+                fontFamily: "'Consolas', 'Monaco', 'Courier New', monospace",
                 fontLigatures: true,
                 cursorBlinking: 'smooth',
                 smoothScrolling: true,
@@ -497,6 +663,12 @@ export default function CodeEditorNew() {
                 suggestOnTriggerCharacters: true,
                 quickSuggestions: true,
                 bracketPairColorization: { enabled: true },
+                padding: { top: 12, bottom: 12 },
+                lineNumbers: 'on',
+                glyphMargin: false,
+                folding: true,
+                lineDecorationsWidth: 0,
+                lineNumbersMinChars: 3,
               }}
               onMount={(editor) => {
                 editorRef.current = editor;
@@ -504,12 +676,23 @@ export default function CodeEditorNew() {
             />
           </div>
 
+          {/* Bottom Status Bar */}
+          <div className={`border-t ${borderColor} px-4 py-1.5 flex items-center justify-between text-xs ${mutedText}`}>
+            <div className="flex items-center gap-3">
+              <span>{lastSaved}</span>
+              {autoSave && <span className="text-green-500">● Auto-save enabled</span>}
+            </div>
+            <div className="flex items-center gap-2">
+              <span>Ln 1, Col 1</span>
+            </div>
+          </div>
+
           {/* Console - Test Cases & Results */}
           {showConsole && (
             <>
               {/* Resize Handle */}
               <div
-                className={`h-1 cursor-row-resize ${hoverBg} transition border-t ${borderColor}`}
+                className={`h-1 cursor-row-resize ${borderColor} border-t ${hoverBg} transition`}
                 onMouseDown={(e) => {
                   const startY = e.clientY;
                   const startHeight = consoleHeight;
@@ -531,28 +714,28 @@ export default function CodeEditorNew() {
               />
 
               <div
-                className={`border-t ${borderColor} overflow-hidden flex flex-col`}
+                className={`overflow-hidden flex flex-col`}
                 style={{ height: `${consoleHeight}px` }}
               >
                 {/* Console Tabs */}
-                <div className={`border-b ${borderColor} flex items-center justify-between px-4`}>
+                <div className={`border-b ${borderColor} flex items-center justify-between px-4 ${bgSecondary}`}>
                   <div className="flex">
                     <button
                       onClick={() => setConsoleTab('testcase')}
-                      className={`px-4 py-2 text-sm font-medium border-b-2 transition ${
+                      className={`px-4 py-2 text-sm font-medium transition ${
                         consoleTab === 'testcase'
-                          ? 'border-orange-500 text-orange-500'
-                          : `border-transparent ${mutedText} ${hoverBg}`
+                          ? `${textColor} border-b-2 border-blue-500`
+                          : mutedText
                       }`}
                     >
                       Testcase
                     </button>
                     <button
                       onClick={() => setConsoleTab('result')}
-                      className={`px-4 py-2 text-sm font-medium border-b-2 transition ${
+                      className={`px-4 py-2 text-sm font-medium transition ${
                         consoleTab === 'result'
-                          ? 'border-orange-500 text-orange-500'
-                          : `border-transparent ${mutedText} ${hoverBg}`
+                          ? `${textColor} border-b-2 border-blue-500`
+                          : mutedText
                       }`}
                     >
                       Test Result
@@ -579,8 +762,8 @@ export default function CodeEditorNew() {
                             onClick={() => setSelectedTestCase(idx)}
                             className={`px-3 py-1.5 text-sm rounded transition ${
                               selectedTestCase === idx
-                                ? 'bg-orange-500 text-white'
-                                : `${isDark ? 'bg-gray-800' : 'bg-gray-200'} ${mutedText}`
+                                ? 'bg-blue-500 text-white'
+                                : `${bgSecondary} ${mutedText} ${hoverBg}`
                             }`}
                           >
                             Case {idx + 1}
@@ -590,17 +773,9 @@ export default function CodeEditorNew() {
 
                       {/* Test Case Input */}
                       <div>
-                        <label className="text-sm font-medium mb-1 block">Input:</label>
-                        <div className={`${isDark ? 'bg-gray-900' : 'bg-gray-50'} rounded p-3 font-mono text-sm`}>
+                        <label className="text-sm font-medium mb-1 block">nums =</label>
+                        <div className={`${bgSecondary} rounded p-3 font-mono text-sm`}>
                           {problem?.testCases?.[selectedTestCase]?.input}
-                        </div>
-                      </div>
-
-                      {/* Expected Output */}
-                      <div>
-                        <label className="text-sm font-medium mb-1 block">Expected Output:</label>
-                        <div className={`${isDark ? 'bg-gray-900' : 'bg-gray-50'} rounded p-3 font-mono text-sm`}>
-                          {problem?.testCases?.[selectedTestCase]?.expectedOutput}
                         </div>
                       </div>
                     </div>
@@ -652,7 +827,7 @@ export default function CodeEditorNew() {
                           {testResults.output && (
                             <div>
                               <label className="text-sm font-medium mb-1 block">Your Output:</label>
-                              <div className={`${isDark ? 'bg-gray-900' : 'bg-gray-50'} rounded p-3 font-mono text-sm`}>
+                              <div className={`${bgSecondary} rounded p-3 font-mono text-sm`}>
                                 {testResults.output}
                               </div>
                             </div>
@@ -686,9 +861,8 @@ export default function CodeEditorNew() {
               {!showConsole && (
                 <button
                   onClick={() => setShowConsole(true)}
-                  className={`${hoverBg} px-3 py-1.5 rounded-lg text-sm font-medium transition flex items-center gap-2`}
+                  className={`${hoverBg} px-3 py-1.5 rounded text-sm font-medium transition flex items-center gap-2`}
                 >
-                  <Terminal className="w-4 h-4" />
                   Console
                 </button>
               )}
@@ -699,9 +873,9 @@ export default function CodeEditorNew() {
               <button
                 onClick={handleRunCode}
                 disabled={running}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition flex items-center gap-2 ${
+                className={`px-4 py-2 rounded text-sm font-medium transition flex items-center gap-2 ${
                   isDark 
-                    ? 'bg-gray-800 hover:bg-gray-700 text-white' 
+                    ? 'bg-[#333333] hover:bg-[#3a3a3a] text-white' 
                     : 'bg-gray-200 hover:bg-gray-300 text-gray-900'
                 }`}
               >
@@ -722,7 +896,7 @@ export default function CodeEditorNew() {
               <button
                 onClick={handleSubmit}
                 disabled={submitting}
-                className="px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium transition flex items-center gap-2"
+                className="px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded text-sm font-medium transition flex items-center gap-2"
               >
                 {submitting ? (
                   <>
@@ -731,7 +905,6 @@ export default function CodeEditorNew() {
                   </>
                 ) : (
                   <>
-                    <Send className="w-4 h-4" />
                     Submit
                   </>
                 )}
