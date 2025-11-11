@@ -2,13 +2,20 @@ import { useNavigate } from 'react-router-dom';
 import { useThemeStore } from '../store/themeStore';
 import { useAuthStore } from '../store/authStore';
 import { BookOpen, Video, FileText, Code2, ExternalLink, Github, Youtube, Award, Lightbulb, Zap, Target, Brain, ArrowRight, Book, Library, Newspaper, GraduationCap, Trophy } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 export default function Resources() {
   const navigate = useNavigate();
   const { isDark } = useThemeStore();
   const { user } = useAuthStore();
   const [hoveredCard, setHoveredCard] = useState(null);
+  const [resources, setResources] = useState({
+    'learning-path': [],
+    'tutorial': [],
+    'video': [],
+    'external': []
+  });
+  const [loading, setLoading] = useState(true);
 
   // TensorFlow color scheme
   const bgColor = isDark ? '#0a0a0a' : '#ffffff';
@@ -16,6 +23,46 @@ export default function Resources() {
   const textMuted = isDark ? '#9ca3af' : '#6b7280';
   const borderColor = isDark ? '#2a2a2a' : '#e5e7eb';
   const cardBg = isDark ? '#1a1a1a' : '#ffffff';
+
+  useEffect(() => {
+    fetchResources();
+  }, []);
+
+  const fetchResources = async () => {
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/resources`);
+      const data = await response.json();
+      
+      // Group resources by type
+      const grouped = {
+        'learning-path': [],
+        'tutorial': [],
+        'video': [],
+        'external': []
+      };
+      
+      data.forEach(resource => {
+        if (grouped[resource.type]) {
+          grouped[resource.type].push(resource);
+        }
+      });
+      
+      setResources(grouped);
+    } catch (error) {
+      console.error('Failed to fetch resources:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getIconComponent = (iconName) => {
+    const icons = {
+      BookOpen, Video, FileText, Code2, ExternalLink, Github, Youtube, 
+      Award, Lightbulb, Zap, Target, Brain, ArrowRight, Book, 
+      Library, Newspaper, GraduationCap, Trophy
+    };
+    return icons[iconName] || BookOpen;
+  };
 
   const learningPaths = [
     {
@@ -176,48 +223,106 @@ export default function Resources() {
             <h2 className={`text-3xl font-bold ${textColor}`}>Learning Paths</h2>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {learningPaths.map((path, index) => {
-              const Icon = path.icon;
-              return (
-                <div
-                  key={index}
-                  onMouseEnter={() => setHoveredCard(`path-${index}`)}
-                  onMouseLeave={() => setHoveredCard(null)}
-                  className={`${cardBg} rounded-xl p-6 border transition-all duration-300 cursor-pointer ${
-                    hoveredCard === `path-${index}` ? 'transform scale-105 shadow-2xl' : 'shadow-lg'
-                  }`}
-                  style={{ borderColor: isDark ? '#2a2a2a' : '#e5e7eb', borderWidth: '1px' }}
-                >
-                  <div className="flex items-start justify-between mb-4">
-                    <div className={`p-3 rounded-lg ${isDark ? 'bg-dark-800' : 'bg-gray-50'}`}>
-                      <Icon className="w-6 h-6 text-orange-500" />
-                    </div>
-                    <span className={`text-xs px-3 py-1 rounded-full ${isDark ? 'bg-dark-800 text-gray-300' : 'bg-gray-100 text-gray-700'}`}>
-                      {path.difficulty}
-                    </span>
-                  </div>
-                  <h3 className={`text-xl font-bold ${textColor} mb-2`}>{path.title}</h3>
-                  <p className={`text-sm ${textMuted} mb-4`}>{path.description}</p>
-                  <div className="space-y-2">
-                    <p className={`text-xs font-semibold ${textMuted} uppercase tracking-wider`}>Topics Covered:</p>
-                    <div className="flex flex-wrap gap-2">
-                      {path.topics.map((topic, idx) => (
-                        <span
-                          key={idx}
-                          className={`text-xs px-2 py-1 rounded ${isDark ? 'bg-dark-800 text-gray-300' : 'bg-gray-100 text-gray-700'}`}
-                        >
-                          {topic}
+            {loading ? (
+              <div className="col-span-3 flex items-center justify-center h-32">
+                <div className="w-8 h-8 border-4 border-orange-500 border-t-transparent rounded-full animate-spin"></div>
+              </div>
+            ) : resources['learning-path'].length > 0 ? (
+              resources['learning-path'].map((path, index) => {
+                const Icon = getIconComponent(path.icon);
+                return (
+                  <div
+                    key={path._id}
+                    onMouseEnter={() => setHoveredCard(`path-${index}`)}
+                    onMouseLeave={() => setHoveredCard(null)}
+                    className={`${cardBg} rounded-xl p-6 border transition-all duration-300 cursor-pointer ${
+                      hoveredCard === `path-${index}` ? 'transform scale-105 shadow-2xl' : 'shadow-lg'
+                    }`}
+                    style={{ borderColor: isDark ? '#2a2a2a' : '#e5e7eb', borderWidth: '1px' }}
+                  >
+                    <div className="flex items-start justify-between mb-4">
+                      <div className={`p-3 rounded-lg ${isDark ? 'bg-dark-800' : 'bg-gray-50'}`}>
+                        <Icon className="w-6 h-6 text-orange-500" />
+                      </div>
+                      {path.difficulty && (
+                        <span className={`text-xs px-3 py-1 rounded-full ${isDark ? 'bg-dark-800 text-gray-300' : 'bg-gray-100 text-gray-700'}`}>
+                          {path.difficulty}
                         </span>
-                      ))}
+                      )}
                     </div>
+                    <h3 className={`text-xl font-bold ${textColor} mb-2`}>{path.title}</h3>
+                    <p className={`text-sm ${textMuted} mb-4`}>{path.description}</p>
+                    {path.topics && path.topics.length > 0 && (
+                      <div className="space-y-2">
+                        <p className={`text-xs font-semibold ${textMuted} uppercase tracking-wider`}>Topics Covered:</p>
+                        <div className="flex flex-wrap gap-2">
+                          {path.topics.map((topic, idx) => (
+                            <span
+                              key={idx}
+                              className={`text-xs px-2 py-1 rounded ${isDark ? 'bg-dark-800 text-gray-300' : 'bg-gray-100 text-gray-700'}`}
+                            >
+                              {topic}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {path.url && (
+                      <button 
+                        onClick={() => window.open(path.url, '_blank')}
+                        className="w-full mt-4 px-4 py-2 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white rounded-lg transition font-medium text-sm shadow-lg flex items-center justify-center gap-2"
+                      >
+                        Start Learning
+                        <ArrowRight className="w-4 h-4" />
+                      </button>
+                    )}
                   </div>
-                  <button className="w-full mt-4 px-4 py-2 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white rounded-lg transition font-medium text-sm shadow-lg flex items-center justify-center gap-2">
-                    Start Learning
-                    <ArrowRight className="w-4 h-4" />
-                  </button>
-                </div>
-              );
-            })}
+                );
+              })
+            ) : (
+              learningPaths.map((path, index) => {
+                const Icon = path.icon;
+                return (
+                  <div
+                    key={index}
+                    onMouseEnter={() => setHoveredCard(`path-${index}`)}
+                    onMouseLeave={() => setHoveredCard(null)}
+                    className={`${cardBg} rounded-xl p-6 border transition-all duration-300 cursor-pointer ${
+                      hoveredCard === `path-${index}` ? 'transform scale-105 shadow-2xl' : 'shadow-lg'
+                    }`}
+                    style={{ borderColor: isDark ? '#2a2a2a' : '#e5e7eb', borderWidth: '1px' }}
+                  >
+                    <div className="flex items-start justify-between mb-4">
+                      <div className={`p-3 rounded-lg ${isDark ? 'bg-dark-800' : 'bg-gray-50'}`}>
+                        <Icon className="w-6 h-6 text-orange-500" />
+                      </div>
+                      <span className={`text-xs px-3 py-1 rounded-full ${isDark ? 'bg-dark-800 text-gray-300' : 'bg-gray-100 text-gray-700'}`}>
+                        {path.difficulty}
+                      </span>
+                    </div>
+                    <h3 className={`text-xl font-bold ${textColor} mb-2`}>{path.title}</h3>
+                    <p className={`text-sm ${textMuted} mb-4`}>{path.description}</p>
+                    <div className="space-y-2">
+                      <p className={`text-xs font-semibold ${textMuted} uppercase tracking-wider`}>Topics Covered:</p>
+                      <div className="flex flex-wrap gap-2">
+                        {path.topics.map((topic, idx) => (
+                          <span
+                            key={idx}
+                            className={`text-xs px-2 py-1 rounded ${isDark ? 'bg-dark-800 text-gray-300' : 'bg-gray-100 text-gray-700'}`}
+                          >
+                            {topic}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                    <button className="w-full mt-4 px-4 py-2 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white rounded-lg transition font-medium text-sm shadow-lg flex items-center justify-center gap-2">
+                      Start Learning
+                      <ArrowRight className="w-4 h-4" />
+                    </button>
+                  </div>
+                );
+              })
+            )}
           </div>
         </section>
 

@@ -333,6 +333,13 @@ export default function Admin() {
           <div className="flex items-center gap-4">
             <ThemeToggle />
             <button
+              onClick={() => navigate('/admin/resources')}
+              className="flex items-center gap-2 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg transition font-medium text-sm"
+            >
+              <Tags className="w-4 h-4" />
+              Manage Resources
+            </button>
+            <button
               onClick={() => navigate('/admin/problem-metadata')}
               className="flex items-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white hover:bg-gray-800 dark:hover:bg-gray-100 text-white dark:text-gray-900 rounded-lg transition font-medium text-sm"
             >
