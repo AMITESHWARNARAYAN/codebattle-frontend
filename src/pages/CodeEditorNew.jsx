@@ -4,7 +4,6 @@ import { useAuthStore } from '../store/authStore';
 import { useThemeStore } from '../store/themeStore';
 import Editor from '@monaco-editor/react';
 import { toast } from 'react-hot-toast';
-import { getSocket } from '../utils/socket';
 import { 
   Play, Send, ChevronLeft, ChevronRight, ChevronDown, Settings, 
   Clock, CheckCircle2, XCircle, Loader2, Code2, FileText, 
@@ -45,7 +44,6 @@ export default function CodeEditorNew() {
   const [testResults, setTestResults] = useState(null);
   const [customInput, setCustomInput] = useState('');
   const [selectedTestCase, setSelectedTestCase] = useState(0);
-  const [cursorPosition, setCursorPosition] = useState({ line: 1, column: 1 });
   
   // Problem metadata
   const [liked, setLiked] = useState(false);
@@ -53,28 +51,18 @@ export default function CodeEditorNew() {
   const [bookmarked, setBookmarked] = useState(false);
   const [showHints, setShowHints] = useState(false);
   const [unlockedHints, setUnlockedHints] = useState([]);
-  const [hints, setHints] = useState([]);
-  const [totalHints, setTotalHints] = useState(0);
   const [likeCount, setLikeCount] = useState(9300);
   const [commentCount, setCommentCount] = useState(204);
   const [autoSave, setAutoSave] = useState(true);
   const [lastSaved, setLastSaved] = useState('Saved');
-  const [userSubmissions, setUserSubmissions] = useState([]);
-  const [communitySolutions, setCommunitySolutions] = useState([]);
-  const [discussions, setDiscussions] = useState([]);
-  const [newCommentText, setNewCommentText] = useState('');
-  const [onlineUsers, setOnlineUsers] = useState(0);
 
   // Layout
   const [leftWidth, setLeftWidth] = useState(50);
   const [consoleHeight, setConsoleHeight] = useState(200);
 
-  // Fetch problem and user interaction status
+  // Fetch problem
   useEffect(() => {
     fetchProblem();
-    fetchProblemStatus();
-    fetchHints();
-    fetchDiscussions();
   }, [problemId]);
 
   // Set initial code template
@@ -83,57 +71,6 @@ export default function CodeEditorNew() {
       setCode(problem.functionSignature[language] || '');
     }
   }, [problem, language]);
-
-  // Auto-save functionality
-  useEffect(() => {
-    if (!autoSave || !code || !problemId) return;
-
-    const timer = setTimeout(async () => {
-      try {
-        // Save code to draft submission in database
-        const response = await fetch(`${API_URL}/submissions`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`
-          },
-          body: JSON.stringify({
-            problemId,
-            code,
-            language,
-            status: 'Draft',
-            isDraft: true
-          })
-        });
-
-        if (response.ok) {
-          setLastSaved(`Saved at ${new Date().toLocaleTimeString()}`);
-        }
-      } catch (error) {
-        console.error('Auto-save failed:', error);
-      }
-    }, 30000); // Save every 30 seconds
-
-    return () => clearTimeout(timer);
-  }, [code, autoSave, problemId, language, token]);
-
-  // Socket.io for online users
-  useEffect(() => {
-    const socket = getSocket();
-    
-    // Join problem room
-    socket.emit('join-problem', { problemId, userId: user?._id, username: user?.username });
-    
-    // Listen for online users count
-    socket.on('problem-users', (count) => {
-      setOnlineUsers(count);
-    });
-
-    return () => {
-      socket.emit('leave-problem', { problemId, userId: user?._id });
-      socket.off('problem-users');
-    };
-  }, [problemId, user]);
 
   const fetchProblem = async () => {
     try {
@@ -147,127 +84,6 @@ export default function CodeEditorNew() {
       navigate('/problems');
     } finally {
       setLoading(false);
-    }
-  };
-
-  const fetchProblemStatus = async () => {
-    try {
-      const response = await fetch(`${API_URL}/problems/${problemId}/status`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      const data = await response.json();
-      setLiked(data.liked);
-      setDisliked(data.disliked);
-      setBookmarked(data.bookmarked);
-      setLikeCount(data.likes);
-    } catch (error) {
-      console.error('Failed to fetch problem status:', error);
-    }
-  };
-
-  const fetchHints = async () => {
-    try {
-      const response = await fetch(`${API_URL}/problem-metadata/${problemId}/hints`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      const data = await response.json();
-      setHints(data.hints);
-      setTotalHints(data.totalHints);
-    } catch (error) {
-      console.error('Failed to fetch hints:', error);
-    }
-  };
-
-  const unlockHint = async (hintIndex) => {
-    try {
-      const response = await fetch(`${API_URL}/problem-metadata/${problemId}/hints/${hintIndex}/unlock`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        }
-      });
-      const data = await response.json();
-      if (response.ok) {
-        toast.success('💡 Hint unlocked!');
-        // Update hints to show the unlocked hint
-        fetchHints();
-      } else {
-        toast.error(data.message);
-      }
-    } catch (error) {
-      toast.error('Failed to unlock hint');
-      console.error('Unlock hint error:', error);
-    }
-  };
-
-  const fetchDiscussions = async () => {
-    try {
-      const response = await fetch(`${API_URL}/discussions/problem/${problemId}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      const data = await response.json();
-      setDiscussions(data);
-    } catch (error) {
-      console.error('Failed to fetch discussions:', error);
-    }
-  };
-
-  const postComment = async () => {
-    if (!newCommentText.trim()) {
-      toast.error('Comment cannot be empty');
-      return;
-    }
-
-    try {
-      const response = await fetch(`${API_URL}/discussions`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          problem: problemId,
-          title: `Comment on ${problem?.title}`,
-          content: newCommentText,
-          tags: ['comment']
-        })
-      });
-      const data = await response.json();
-      if (response.ok) {
-        toast.success('Comment posted!');
-        setNewCommentText('');
-        fetchDiscussions();
-      } else {
-        toast.error('Failed to post comment');
-      }
-    } catch (error) {
-      toast.error('Failed to post comment');
-      console.error('Post comment error:', error);
-    }
-  };
-
-  const fetchUserSubmissions = async () => {
-    try {
-      const response = await fetch(`${API_URL}/submissions?problemId=${problemId}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      const data = await response.json();
-      setUserSubmissions(data);
-    } catch (error) {
-      console.error('Failed to fetch submissions:', error);
-    }
-  };
-
-  const fetchCommunitySolutions = async () => {
-    try {
-      const response = await fetch(`${API_URL}/submissions/community/${problemId}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      const data = await response.json();
-      setCommunitySolutions(data);
-    } catch (error) {
-      console.error('Failed to fetch community solutions:', error);
     }
   };
 
@@ -291,8 +107,7 @@ export default function CodeEditorNew() {
           code,
           language,
           problemId,
-          testCaseIndex: customInput ? undefined : selectedTestCase,
-          input: customInput || undefined
+          testCaseIndex: selectedTestCase
         })
       });
 
@@ -364,135 +179,24 @@ export default function CodeEditorNew() {
     }
   };
 
-  const handleLike = async () => {
-    try {
-      const response = await fetch(`${API_URL}/problems/${problemId}/like`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        }
-      });
-      const data = await response.json();
-      setLiked(data.liked);
-      setLikeCount(data.likes);
-      if (data.liked) {
-        setDisliked(false);
-      }
-      toast.success(data.liked ? 'Liked!' : 'Unliked!');
-    } catch (error) {
-      toast.error('Failed to like problem');
-      console.error('Like error:', error);
-    }
-  };
-
-  const handleDislike = async () => {
-    try {
-      const response = await fetch(`${API_URL}/problems/${problemId}/dislike`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        }
-      });
-      const data = await response.json();
-      setDisliked(data.disliked);
-      if (data.disliked) {
-        setLiked(false);
-      }
-      toast.success(data.disliked ? 'Disliked!' : 'Undisliked!');
-    } catch (error) {
-      toast.error('Failed to dislike problem');
-      console.error('Dislike error:', error);
-    }
-  };
-
-  const handleBookmark = async () => {
-    try {
-      const response = await fetch(`${API_URL}/problems/${problemId}/bookmark`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        }
-      });
-      const data = await response.json();
-      setBookmarked(data.bookmarked);
-      toast.success(data.bookmarked ? '🔖 Bookmarked!' : '🔖 Removed from bookmarks!');
-    } catch (error) {
-      toast.error('Failed to bookmark problem');
-      console.error('Bookmark error:', error);
-    }
-  };
-
-  const handleShare = async () => {
-    const problemUrl = `${window.location.origin}/problem/${problemId}`;
-    
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: problem?.title,
-          text: `Check out this problem: ${problem?.title}`,
-          url: problemUrl
-        });
-      } catch (error) {
-        if (error.name !== 'AbortError') {
-          toast.error('Failed to share');
-        }
-      }
+  const handleLike = () => {
+    if (!liked) {
+      setLiked(true);
+      setDisliked(false);
+      setLikeCount(prev => prev + 1);
     } else {
-      // Fallback: Copy to clipboard
-      navigator.clipboard.writeText(problemUrl).then(() => {
-        toast.success('Problem link copied to clipboard!');
-      }).catch(() => {
-        toast.error('Failed to copy link');
-      });
+      setLiked(false);
+      setLikeCount(prev => prev - 1);
     }
   };
 
-  const handlePreviousProblem = async () => {
-    try {
-      const response = await fetch(`${API_URL}/problems`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      const problems = await response.json();
-      const currentIndex = problems.findIndex(p => p._id === problemId);
-      if (currentIndex > 0) {
-        navigate(`/problem/${problems[currentIndex - 1]._id}`);
-      } else {
-        toast.error('No previous problem');
-      }
-    } catch (error) {
-      toast.error('Failed to navigate');
-    }
-  };
-
-  const handleNextProblem = async () => {
-    try {
-      const response = await fetch(`${API_URL}/problems`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      const problems = await response.json();
-      const currentIndex = problems.findIndex(p => p._id === problemId);
-      if (currentIndex < problems.length - 1) {
-        navigate(`/problem/${problems[currentIndex + 1]._id}`);
-      } else {
-        toast.error('No next problem');
-      }
-    } catch (error) {
-      toast.error('Failed to navigate');
-    }
-  };
-
-  const handleRandomProblem = async () => {
-    try {
-      const response = await fetch(`${API_URL}/problems/random`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      const problem = await response.json();
-      navigate(`/problem/${problem._id}`);
-    } catch (error) {
-      toast.error('Failed to get random problem');
+  const handleDislike = () => {
+    if (!disliked) {
+      setDisliked(true);
+      setLiked(false);
+      if (liked) setLikeCount(prev => prev - 1);
+    } else {
+      setDisliked(false);
     }
   };
 
@@ -519,9 +223,8 @@ export default function CodeEditorNew() {
   }
 
   return (
-    <div className={`h-screen flex flex-col ${bgColor} ${textColor} ${isFullscreen ? 'fixed inset-0 z-50' : ''}`}>
+    <div className={`h-screen flex flex-col ${bgColor} ${textColor}`}>
       {/* Top Navigation Bar */}
-      {!isFullscreen && (
       <header className={`border-b ${borderColor} px-3 py-2 flex items-center justify-between`}>
         <div className="flex items-center gap-3">
           {/* Logo/Back */}
@@ -535,21 +238,18 @@ export default function CodeEditorNew() {
           {/* Problem Navigation */}
           <div className="flex items-center gap-1">
             <button
-              onClick={handlePreviousProblem}
               className={`${hoverBg} p-1.5 rounded transition`}
               title="Previous Problem"
             >
               <ChevronLeft className="w-4 h-4" />
             </button>
             <button
-              onClick={() => navigate('/problems')}
               className={`${hoverBg} p-1.5 rounded transition`}
               title="Problem List"
             >
               <Menu className="w-4 h-4" />
             </button>
             <button
-              onClick={handleNextProblem}
               className={`${hoverBg} p-1.5 rounded transition`}
               title="Next Problem"
             >
@@ -559,7 +259,6 @@ export default function CodeEditorNew() {
 
           {/* Random Problem */}
           <button
-            onClick={handleRandomProblem}
             className={`${hoverBg} p-1.5 rounded transition`}
             title="Random Problem"
           >
@@ -604,7 +303,6 @@ export default function CodeEditorNew() {
           </div>
         </div>
       </header>
-      )}
 
       {/* Main Content */}
       <div className="flex-1 flex overflow-hidden">
@@ -619,8 +317,7 @@ export default function CodeEditorNew() {
               { id: 'description', label: 'Description', icon: FileText },
               { id: 'editorial', label: 'Editorial', icon: BookOpen },
               { id: 'solutions', label: 'Solutions', icon: Users },
-              { id: 'submissions', label: 'Submissions', icon: ListOrdered },
-              { id: 'discussions', label: 'Discussions', icon: MessageSquare }
+              { id: 'submissions', label: 'Submissions', icon: ListOrdered }
             ].map((tab) => {
               const Icon = tab.icon;
               return (
@@ -737,42 +434,13 @@ export default function CodeEditorNew() {
 
             {leftPanelTab === 'editorial' && (
               <div className="p-4 space-y-4">
-                <h2 className="text-lg font-bold">Hints & Editorial</h2>
-                {hints && hints.length > 0 ? (
-                  <div className="space-y-3">
-                    {hints.map((hint, idx) => (
-                      <div key={idx} className={`${bgSecondary} rounded-lg p-3 border ${borderColor}`}>
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="text-sm font-medium">Hint {hint.index + 1}</span>
-                          {hint.isLocked ? (
-                            <button
-                              onClick={() => unlockHint(hint.index)}
-                              className="text-xs px-2 py-1 rounded bg-blue-500 hover:bg-blue-600 text-white transition"
-                            >
-                              Unlock
-                            </button>
-                          ) : (
-                            <span className="text-xs text-green-500">✓ Unlocked</span>
-                          )}
-                        </div>
-                        <p className="text-sm">{hint.hint}</p>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className={`${bgSecondary} rounded-lg p-6 text-center`}>
-                    <Lightbulb className="w-12 h-12 mx-auto mb-3 text-yellow-500" />
-                    <p className={`text-sm ${mutedText}`}>
-                      No hints available for this problem
-                    </p>
-                  </div>
-                )}
-                <div className={`${bgSecondary} rounded-lg p-4 mt-4`}>
-                  <h3 className="text-sm font-bold mb-2">Premium Editorial</h3>
-                  <p className={`text-xs ${mutedText} mb-3`}>
-                    Get detailed editorials and explanations
+                <h2 className="text-lg font-bold">Editorial</h2>
+                <div className={`${bgSecondary} rounded-lg p-6 text-center`}>
+                  <BookOpen className="w-12 h-12 mx-auto mb-3 text-orange-500" />
+                  <p className={`text-sm ${mutedText} mb-4`}>
+                    Premium editorial available
                   </p>
-                  <button className="w-full px-4 py-2 bg-gradient-to-r from-yellow-400 to-orange-400 hover:from-yellow-500 hover:to-orange-500 text-gray-900 rounded text-sm font-semibold transition">
+                  <button className="px-4 py-2 bg-gradient-to-r from-yellow-400 to-orange-400 hover:from-yellow-500 hover:to-orange-500 text-gray-900 rounded-lg text-sm font-semibold transition">
                     Unlock Premium
                   </button>
                 </div>
@@ -783,151 +451,29 @@ export default function CodeEditorNew() {
               <div className="p-4 space-y-4">
                 <div className="flex items-center justify-between">
                   <h2 className="text-lg font-bold">Solutions</h2>
-                  <button
-                    onClick={fetchCommunitySolutions}
-                    className={`px-3 py-1 text-xs rounded border ${borderColor} ${bgColor} hover:${bgSecondary} transition`}
-                  >
-                    Reload
-                  </button>
+                  <select className={`px-3 py-1.5 text-xs rounded border ${borderColor} ${bgColor}`}>
+                    <option>Most Votes</option>
+                    <option>Most Recent</option>
+                    <option>Top Runtime</option>
+                  </select>
                 </div>
-                {communitySolutions && communitySolutions.length > 0 ? (
-                  <div className="space-y-2">
-                    {communitySolutions.map((solution, idx) => (
-                      <div key={idx} className={`${bgSecondary} rounded-lg p-3 border ${borderColor} cursor-pointer hover:border-blue-500 transition`}>
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm font-medium">{solution.user?.username}</span>
-                            <span className={`text-xs px-2 py-0.5 rounded ${
-                              solution.language === 'cpp' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300' :
-                              solution.language === 'python' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300' :
-                              solution.language === 'java' ? 'bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300' :
-                              'bg-gray-100 text-gray-700 dark:bg-gray-900 dark:text-gray-300'
-                            }`}>
-                              {solution.language}
-                            </span>
-                          </div>
-                          <div className="text-xs text-green-500 font-medium">Accepted</div>
-                        </div>
-                        <div className="text-xs mt-2 flex gap-3">
-                          {solution.runtime && <span>⚡ {solution.runtime}ms</span>}
-                          {solution.memory && <span>💾 {solution.memory}MB</span>}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className={`${bgSecondary} rounded-lg p-6 text-center`}>
-                    <Users className="w-12 h-12 mx-auto mb-3 text-blue-500" />
-                    <p className={`text-sm ${mutedText}`}>
-                      Solve the problem to unlock community solutions
-                    </p>
-                  </div>
-                )}
+                <div className={`${bgSecondary} rounded-lg p-6 text-center`}>
+                  <Users className="w-12 h-12 mx-auto mb-3 text-blue-500" />
+                  <p className={`text-sm ${mutedText}`}>
+                    Solve the problem to unlock community solutions
+                  </p>
+                </div>
               </div>
             )}
 
             {leftPanelTab === 'submissions' && (
               <div className="p-4 space-y-4">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-lg font-bold">Submissions</h2>
-                  <button
-                    onClick={fetchUserSubmissions}
-                    className={`px-3 py-1 text-xs rounded border ${borderColor} ${bgColor} hover:${bgSecondary} transition`}
-                  >
-                    Reload
-                  </button>
-                </div>
-                {userSubmissions && userSubmissions.length > 0 ? (
-                  <div className="space-y-2">
-                    {userSubmissions.map((submission, idx) => (
-                      <div key={idx} className={`${bgSecondary} rounded-lg p-3 border ${borderColor}`}>
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            {submission.status === 'Accepted' ? (
-                              <CheckCircle2 className="w-4 h-4 text-green-500" />
-                            ) : (
-                              <XCircle className="w-4 h-4 text-red-500" />
-                            )}
-                            <span className="text-sm font-medium">{submission.status}</span>
-                          </div>
-                          <span className="text-xs text-gray-500">
-                            {new Date(submission.createdAt).toLocaleDateString()}
-                          </span>
-                        </div>
-                        <div className="text-xs mt-2 flex gap-2">
-                          <span>{submission.language}</span>
-                          {submission.runtime && <span>{submission.runtime}ms</span>}
-                          {submission.memory && <span>{submission.memory}MB</span>}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className={`${bgSecondary} rounded-lg p-6 text-center`}>
-                    <ListOrdered className="w-12 h-12 mx-auto mb-3 text-green-500" />
-                    <p className={`text-sm ${mutedText}`}>
-                      Your submissions will appear here
-                    </p>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {leftPanelTab === 'discussions' && (
-              <div className="p-4 space-y-4 flex flex-col h-full">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-lg font-bold">Discussions</h2>
-                  <button
-                    onClick={fetchDiscussions}
-                    className={`px-3 py-1 text-xs rounded border ${borderColor} ${bgColor} hover:${bgSecondary} transition`}
-                  >
-                    Reload
-                  </button>
-                </div>
-
-                {/* New Comment Input */}
-                <div className="space-y-2">
-                  <textarea
-                    value={newCommentText}
-                    onChange={(e) => setNewCommentText(e.target.value)}
-                    placeholder="Share your thoughts about this problem..."
-                    className={`w-full h-20 ${bgSecondary} rounded p-2 text-sm border ${borderColor} focus:outline-none focus:border-blue-500 resize-none`}
-                  />
-                  <button
-                    onClick={postComment}
-                    className="w-full px-3 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded text-sm font-medium transition"
-                  >
-                    Post Comment
-                  </button>
-                </div>
-
-                {/* Discussions List */}
-                <div className="flex-1 overflow-y-auto space-y-2">
-                  {discussions && discussions.length > 0 ? (
-                    discussions.map((discussion, idx) => (
-                      <div key={idx} className={`${bgSecondary} rounded-lg p-3 border ${borderColor}`}>
-                        <div className="flex items-start gap-2">
-                          <div className="flex-1">
-                            <p className="text-sm font-medium">{discussion.user?.username}</p>
-                            <p className="text-sm mt-1">{discussion.content}</p>
-                            <div className="flex items-center gap-3 mt-2 text-xs">
-                              <span className={mutedText}>{new Date(discussion.createdAt).toLocaleDateString()}</span>
-                              <span className={mutedText}>
-                                {discussion.upvotes?.length || 0} Votes
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    ))
-                  ) : (
-                    <div className={`${bgSecondary} rounded-lg p-6 text-center`}>
-                      <MessageSquare className="w-12 h-12 mx-auto mb-3 text-blue-500" />
-                      <p className={`text-sm ${mutedText}`}>
-                        No discussions yet. Be the first to comment!
-                      </p>
-                    </div>
-                  )}
+                <h2 className="text-lg font-bold">Submissions</h2>
+                <div className={`${bgSecondary} rounded-lg p-6 text-center`}>
+                  <ListOrdered className="w-12 h-12 mx-auto mb-3 text-green-500" />
+                  <p className={`text-sm ${mutedText}`}>
+                    Your submissions will appear here
+                  </p>
                 </div>
               </div>
             )}
@@ -958,19 +504,14 @@ export default function CodeEditorNew() {
               </button>
 
               {/* Comments */}
-              <button 
-                onClick={() => setLeftPanelTab('discussions')}
-                className={`flex items-center gap-1.5 ${hoverBg} px-2 py-1 rounded transition ${
-                  leftPanelTab === 'discussions' ? 'text-blue-500' : mutedText
-                }`}
-              >
+              <button className={`flex items-center gap-1.5 ${hoverBg} px-2 py-1 rounded transition ${mutedText}`}>
                 <MessageSquare className="w-4 h-4" />
-                <span className="font-medium">{discussions.length}</span>
+                <span className="font-medium">{commentCount}</span>
               </button>
 
               {/* Bookmark */}
               <button
-                onClick={handleBookmark}
+                onClick={() => setBookmarked(!bookmarked)}
                 className={`${hoverBg} p-1 rounded transition ${
                   bookmarked ? 'text-yellow-500' : mutedText
                 }`}
@@ -979,10 +520,7 @@ export default function CodeEditorNew() {
               </button>
 
               {/* Share */}
-              <button 
-                onClick={handleShare}
-                className={`${hoverBg} p-1 rounded transition ${mutedText}`}
-              >
+              <button className={`${hoverBg} p-1 rounded transition ${mutedText}`}>
                 <Share2 className="w-4 h-4" />
               </button>
 
@@ -1000,7 +538,7 @@ export default function CodeEditorNew() {
             {/* Online Count */}
             <div className="flex items-center gap-1.5 text-xs">
               <div className="w-2 h-2 rounded-full bg-green-500"></div>
-              <span className={mutedText}>{onlineUsers} {onlineUsers === 1 ? 'User' : 'Users'} Online</span>
+              <span className={mutedText}>39 Online</span>
             </div>
           </div>
         </div>
@@ -1134,13 +672,6 @@ export default function CodeEditorNew() {
               }}
               onMount={(editor) => {
                 editorRef.current = editor;
-                // Handle cursor position change
-                editor.onDidChangeCursorPosition((e) => {
-                  setCursorPosition({
-                    line: e.position.lineNumber,
-                    column: e.position.column
-                  });
-                });
               }}
             />
           </div>
@@ -1152,7 +683,7 @@ export default function CodeEditorNew() {
               {autoSave && <span className="text-green-500">● Auto-save enabled</span>}
             </div>
             <div className="flex items-center gap-2">
-              <span>Ln {cursorPosition.line}, Col {cursorPosition.column}</span>
+              <span>Ln 1, Col 1</span>
             </div>
           </div>
 
@@ -1224,16 +755,13 @@ export default function CodeEditorNew() {
                   {consoleTab === 'testcase' && (
                     <div className="space-y-3">
                       {/* Test Case Selector */}
-                      <div className="flex gap-2 flex-wrap">
+                      <div className="flex gap-2">
                         {problem?.testCases?.slice(0, 3).map((tc, idx) => (
                           <button
                             key={idx}
-                            onClick={() => {
-                              setSelectedTestCase(idx);
-                              setCustomInput('');
-                            }}
+                            onClick={() => setSelectedTestCase(idx)}
                             className={`px-3 py-1.5 text-sm rounded transition ${
-                              selectedTestCase === idx && !customInput
+                              selectedTestCase === idx
                                 ? 'bg-blue-500 text-white'
                                 : `${bgSecondary} ${mutedText} ${hoverBg}`
                             }`}
@@ -1241,39 +769,15 @@ export default function CodeEditorNew() {
                             Case {idx + 1}
                           </button>
                         ))}
-                        <button
-                          onClick={() => {
-                            setSelectedTestCase(-1);
-                          }}
-                          className={`px-3 py-1.5 text-sm rounded transition ${
-                            customInput
-                              ? 'bg-blue-500 text-white'
-                              : `${bgSecondary} ${mutedText} ${hoverBg}`
-                          }`}
-                        >
-                          Custom
-                        </button>
                       </div>
 
-                      {/* Test Case Input or Custom Input */}
-                      {customInput || selectedTestCase === -1 ? (
-                        <div>
-                          <label className="text-sm font-medium mb-1 block">Custom Input</label>
-                          <textarea
-                            value={customInput}
-                            onChange={(e) => setCustomInput(e.target.value)}
-                            placeholder="Enter custom test input..."
-                            className={`w-full h-32 ${bgSecondary} rounded p-3 font-mono text-sm border ${borderColor} focus:outline-none focus:border-blue-500`}
-                          />
+                      {/* Test Case Input */}
+                      <div>
+                        <label className="text-sm font-medium mb-1 block">nums =</label>
+                        <div className={`${bgSecondary} rounded p-3 font-mono text-sm`}>
+                          {problem?.testCases?.[selectedTestCase]?.input}
                         </div>
-                      ) : (
-                        <div>
-                          <label className="text-sm font-medium mb-1 block">Input</label>
-                          <div className={`${bgSecondary} rounded p-3 font-mono text-sm`}>
-                            {problem?.testCases?.[selectedTestCase]?.input}
-                          </div>
-                        </div>
-                      )}
+                      </div>
                     </div>
                   )}
 
