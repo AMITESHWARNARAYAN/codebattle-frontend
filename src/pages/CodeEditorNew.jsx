@@ -328,11 +328,15 @@ export default function CodeEditorNew() {
       });
       if (response.ok) {
         const prefs = await response.json();
+        console.log('User preferences loaded:', prefs);
         setLiked(prefs.liked);
         setDisliked(prefs.disliked);
         setBookmarked(prefs.bookmarked);
         setLikeCount(prefs.likes || 9300);
         setCommentCount(prefs.comments || 204);
+      } else {
+        const error = await response.json();
+        console.error('Failed to fetch preferences:', error);
       }
     } catch (error) {
       console.error('Failed to fetch preferences:', error);
@@ -347,7 +351,10 @@ export default function CodeEditorNew() {
       });
       if (response.ok) {
         const data = await response.json();
+        console.log('Online users loaded:', data);
         setOnlineUsers(data.onlineUsers || 39);
+      } else {
+        console.error('Failed to fetch online users');
       }
     } catch (error) {
       console.error('Failed to fetch online users:', error);
@@ -366,11 +373,16 @@ export default function CodeEditorNew() {
         setLiked(data.liked);
         setDisliked(false);
         setLikeCount(data.likes);
+        setCommentCount(data.comments || commentCount);
         toast.success(data.liked ? '👍 Liked!' : '👎 Unlike');
+      } else {
+        const error = await response.json();
+        toast.error(error.message || 'Failed to like problem');
+        console.error('Like error:', error);
       }
     } catch (error) {
       toast.error('Failed to save preference');
-      console.error(error);
+      console.error('Like fetch error:', error);
     }
   };
 
@@ -386,11 +398,16 @@ export default function CodeEditorNew() {
         setDisliked(data.disliked);
         setLiked(false);
         setLikeCount(data.likes);
+        setCommentCount(data.comments || commentCount);
         toast.success(data.disliked ? '👎 Disliked!' : 'Remove dislike');
+      } else {
+        const error = await response.json();
+        toast.error(error.message || 'Failed to dislike problem');
+        console.error('Dislike error:', error);
       }
     } catch (error) {
       toast.error('Failed to save preference');
-      console.error(error);
+      console.error('Dislike fetch error:', error);
     }
   };
 
