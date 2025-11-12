@@ -57,6 +57,12 @@ export default function CodeEditorNew() {
   const [autoSave, setAutoSave] = useState(true);
   const [lastSaved, setLastSaved] = useState('Saved');
 
+  // Editorial & Solutions
+  const [editorial, setEditorial] = useState(null);
+  const [solutions, setSolutions] = useState([]);
+  const [submissions, setSubmissions] = useState([]);
+  const [onlineUsers, setOnlineUsers] = useState(39);
+
   // Layout
   const [leftWidth, setLeftWidth] = useState(50);
   const [consoleHeight, setConsoleHeight] = useState(200);
@@ -104,9 +110,88 @@ export default function CodeEditorNew() {
     }
   };
 
+  const fetchEditorial = async () => {
+    try {
+      const response = await fetch(`${API_URL}/explanations/${problemId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setEditorial(data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch editorial:', error);
+    }
+  };
+
+  const fetchSubmissions = async () => {
+    try {
+      const response = await fetch(`${API_URL}/submissions?problemId=${problemId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setSubmissions(data.submissions || []);
+      }
+    } catch (error) {
+      console.error('Failed to fetch submissions:', error);
+    }
+  };
+
   const unlockHint = (hintId) => {
     if (!unlockedHints.includes(hintId)) {
       setUnlockedHints([...unlockedHints, hintId]);
+    }
+  };
+
+  // Problem Navigation
+  const goToPreviousProblem = async () => {
+    try {
+      const response = await fetch(`${API_URL}/problems?skip=${Math.max(0, parseInt(problemId) - 1)}&limit=1`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        if (data.problems && data.problems.length > 0) {
+          navigate(`/problem/${data.problems[0]._id}`);
+        }
+      }
+    } catch (error) {
+      toast.error('Failed to load previous problem');
+    }
+  };
+
+  const goToNextProblem = async () => {
+    try {
+      const response = await fetch(`${API_URL}/problems?skip=${parseInt(problemId) + 1}&limit=1`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        if (data.problems && data.problems.length > 0) {
+          navigate(`/problem/${data.problems[0]._id}`);
+        } else {
+          toast.info('No more problems');
+        }
+      }
+    } catch (error) {
+      toast.error('Failed to load next problem');
+    }
+  };
+
+  const goToRandomProblem = async () => {
+    try {
+      const response = await fetch(`${API_URL}/problems?random=true&limit=1`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        if (data.problems && data.problems.length > 0) {
+          navigate(`/problem/${data.problems[0]._id}`);
+        }
+      }
+    } catch (error) {
+      toast.error('Failed to load random problem');
     }
   };
 
@@ -347,18 +432,21 @@ export default function CodeEditorNew() {
           {/* Problem Navigation */}
           <div className="flex items-center gap-1">
             <button
+              onClick={goToPreviousProblem}
               className={`${hoverBg} p-1.5 rounded transition`}
               title="Previous Problem"
             >
               <ChevronLeft className="w-4 h-4" />
             </button>
             <button
+              onClick={() => navigate('/problems')}
               className={`${hoverBg} p-1.5 rounded transition`}
               title="Problem List"
             >
               <Menu className="w-4 h-4" />
             </button>
             <button
+              onClick={goToNextProblem}
               className={`${hoverBg} p-1.5 rounded transition`}
               title="Next Problem"
             >
@@ -368,6 +456,7 @@ export default function CodeEditorNew() {
 
           {/* Random Problem */}
           <button
+            onClick={goToRandomProblem}
             className={`${hoverBg} p-1.5 rounded transition`}
             title="Random Problem"
           >
@@ -432,7 +521,12 @@ export default function CodeEditorNew() {
               return (
                 <button
                   key={tab.id}
-                  onClick={() => setLeftPanelTab(tab.id)}
+                  onClick={() => {
+                    setLeftPanelTab(tab.id);
+                    // Fetch data when tab is clicked
+                    if (tab.id === 'editorial' && !editorial) fetchEditorial();
+                    if (tab.id === 'submissions' && submissions.length === 0) fetchSubmissions();
+                  }}
                   className={`px-4 py-2.5 text-sm font-medium border-b-2 transition flex items-center gap-2 ${
                     leftPanelTab === tab.id
                       ? 'border-blue-500 text-blue-500'
@@ -587,15 +681,35 @@ export default function CodeEditorNew() {
             {leftPanelTab === 'editorial' && (
               <div className="p-4 space-y-4">
                 <h2 className="text-lg font-bold">Editorial</h2>
-                <div className={`${bgSecondary} rounded-lg p-6 text-center`}>
-                  <BookOpen className="w-12 h-12 mx-auto mb-3 text-orange-500" />
-                  <p className={`text-sm ${mutedText} mb-4`}>
-                    Premium editorial available
-                  </p>
-                  <button className="px-4 py-2 bg-gradient-to-r from-yellow-400 to-orange-400 hover:from-yellow-500 hover:to-orange-500 text-gray-900 rounded-lg text-sm font-semibold transition">
-                    Unlock Premium
-                  </button>
-                </div>
+                {editorial ? (
+                  <div className="space-y-4">
+                    <div className={`${bgSecondary} rounded-lg p-4`}>
+                      <h3 className="font-semibold mb-2">Approach:</h3>
+                      <p className={`text-sm ${mutedText}`}>{editorial.approach}</p>
+                    </div>
+                    {editorial.solution && (
+                      <div className={`${bgSecondary} rounded-lg p-4`}>
+                        <h3 className="font-semibold mb-2">Solution:</h3>
+                        <pre className={`text-xs overflow-x-auto ${bgColor} p-2 rounded font-mono`}>
+                          {editorial.solution}
+                        </pre>
+                      </div>
+                    )}
+                    {editorial.complexity && (
+                      <div className={`${bgSecondary} rounded-lg p-4`}>
+                        <h3 className="font-semibold mb-2">Complexity Analysis:</h3>
+                        <p className={`text-sm ${mutedText}`}>{editorial.complexity}</p>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className={`${bgSecondary} rounded-lg p-6 text-center`}>
+                    <BookOpen className="w-12 h-12 mx-auto mb-3 text-orange-500" />
+                    <p className={`text-sm ${mutedText} mb-4`}>
+                      Editorial not available for this problem
+                    </p>
+                  </div>
+                )}
               </div>
             )}
 
@@ -621,12 +735,40 @@ export default function CodeEditorNew() {
             {leftPanelTab === 'submissions' && (
               <div className="p-4 space-y-4">
                 <h2 className="text-lg font-bold">Submissions</h2>
-                <div className={`${bgSecondary} rounded-lg p-6 text-center`}>
-                  <ListOrdered className="w-12 h-12 mx-auto mb-3 text-green-500" />
-                  <p className={`text-sm ${mutedText}`}>
-                    Your submissions will appear here
-                  </p>
-                </div>
+                {submissions.length > 0 ? (
+                  <div className="space-y-2">
+                    {submissions.slice(0, 10).map((submission, idx) => (
+                      <div
+                        key={idx}
+                        className={`${bgSecondary} rounded p-3 text-sm`}
+                      >
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="font-medium">
+                            {submission.status === 'Accepted' ? '✅' : '❌'} {submission.status}
+                          </span>
+                          <span className={`text-xs ${mutedText}`}>
+                            {submission.language}
+                          </span>
+                        </div>
+                        <div className={`text-xs ${mutedText}`}>
+                          {new Date(submission.createdAt).toLocaleDateString()}
+                        </div>
+                        {submission.runtime && (
+                          <div className={`text-xs ${mutedText}`}>
+                            Runtime: {submission.runtime}ms
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className={`${bgSecondary} rounded-lg p-6 text-center`}>
+                    <ListOrdered className="w-12 h-12 mx-auto mb-3 text-green-500" />
+                    <p className={`text-sm ${mutedText}`}>
+                      Your submissions will appear here
+                    </p>
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -690,8 +832,8 @@ export default function CodeEditorNew() {
 
             {/* Online Count */}
             <div className="flex items-center gap-1.5 text-xs">
-              <div className="w-2 h-2 rounded-full bg-green-500"></div>
-              <span className={mutedText}>39 Online</span>
+              <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+              <span className={mutedText}>{onlineUsers} Online</span>
             </div>
           </div>
         </div>
