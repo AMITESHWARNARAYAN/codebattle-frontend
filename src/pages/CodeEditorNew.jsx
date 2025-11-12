@@ -50,6 +50,7 @@ export default function CodeEditorNew() {
   const [disliked, setDisliked] = useState(false);
   const [bookmarked, setBookmarked] = useState(false);
   const [showHints, setShowHints] = useState(false);
+  const [hints, setHints] = useState([]);
   const [unlockedHints, setUnlockedHints] = useState([]);
   const [likeCount, setLikeCount] = useState(9300);
   const [commentCount, setCommentCount] = useState(204);
@@ -79,11 +80,33 @@ export default function CodeEditorNew() {
       });
       const data = await response.json();
       setProblem(data);
+      // Fetch hints for the problem
+      fetchHints();
     } catch (error) {
       toast.error('Failed to load problem');
       navigate('/problems');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchHints = async () => {
+    try {
+      const response = await fetch(`${API_URL}/judge/hints/${problemId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setHints(data.hints || []);
+      }
+    } catch (error) {
+      console.error('Failed to fetch hints:', error);
+    }
+  };
+
+  const unlockHint = (hintId) => {
+    if (!unlockedHints.includes(hintId)) {
+      setUnlockedHints([...unlockedHints, hintId]);
     }
   };
 
@@ -111,16 +134,27 @@ export default function CodeEditorNew() {
         })
       });
 
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to run code');
+      }
+
       const result = await response.json();
-      setTestResults(result);
+      setTestResults({
+        ...result,
+        status: result.status || 'Accepted'
+      });
 
       if (result.status === 'Accepted') {
-        toast.success('Test case passed!');
+        toast.success('✅ Test case passed!');
+      } else if (result.error) {
+        toast.error('❌ Runtime Error');
       } else {
-        toast.error(result.status);
+        toast.error('❌ Wrong Answer');
       }
     } catch (error) {
-      toast.error('Failed to run code');
+      toast.error(`Error: ${error.message || 'Failed to run code'}`);
+      console.error('Run code error:', error);
     } finally {
       setRunning(false);
     }
@@ -149,16 +183,30 @@ export default function CodeEditorNew() {
         })
       });
 
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to submit code');
+      }
+
       const result = await response.json();
-      setTestResults(result);
+      setTestResults({
+        status: result.status,
+        testCasesPassed: result.testCasesPassed,
+        totalTestCases: result.totalTestCases,
+        executionTime: result.executionTime,
+        memoryUsed: result.memoryUsed,
+        outputs: result.outputs,
+        errors: result.errors
+      });
 
       if (result.status === 'Accepted') {
-        toast.success('✅ Accepted!');
+        toast.success('✅ Accepted! All test cases passed!');
       } else {
-        toast.error(`❌ ${result.status}`);
+        toast.error(`❌ ${result.testCasesPassed}/${result.totalTestCases} test cases passed`);
       }
     } catch (error) {
-      toast.error('Failed to submit code');
+      toast.error(`Error: ${error.message || 'Failed to submit code'}`);
+      console.error('Submit code error:', error);
     } finally {
       setSubmitting(false);
     }
@@ -179,24 +227,85 @@ export default function CodeEditorNew() {
     }
   };
 
-  const handleLike = () => {
-    if (!liked) {
-      setLiked(true);
-      setDisliked(false);
-      setLikeCount(prev => prev + 1);
-    } else {
-      setLiked(false);
-      setLikeCount(prev => prev - 1);
+  // Fetch user preferences
+  useEffect(() => {
+    if (problemId && token) {
+      fetchUserPreferences();
+    }
+  }, [problemId, token]);
+
+  const fetchUserPreferences = async () => {
+    try {
+      const response = await fetch(`${API_URL}/problem-metadata/${problemId}/user-preferences`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (response.ok) {
+        const prefs = await response.json();
+        setLiked(prefs.liked);
+        setDisliked(prefs.disliked);
+        setBookmarked(prefs.bookmarked);
+        setLikeCount(prefs.likes);
+      }
+    } catch (error) {
+      console.error('Failed to fetch preferences:', error);
     }
   };
 
-  const handleDislike = () => {
-    if (!disliked) {
-      setDisliked(true);
-      setLiked(false);
-      if (liked) setLikeCount(prev => prev - 1);
-    } else {
-      setDisliked(false);
+  const handleLike = async () => {
+    try {
+      const response = await fetch(`${API_URL}/problem-metadata/${problemId}/like`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setLiked(data.liked);
+        setDisliked(false);
+        setLikeCount(data.likes);
+        toast.success(data.liked ? '👍 Liked!' : '👎 Unlike');
+      }
+    } catch (error) {
+      toast.error('Failed to save preference');
+      console.error(error);
+    }
+  };
+
+  const handleDislike = async () => {
+    try {
+      const response = await fetch(`${API_URL}/problem-metadata/${problemId}/dislike`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setDisliked(data.disliked);
+        setLiked(false);
+        setLikeCount(data.likes);
+        toast.success(data.disliked ? '👎 Disliked!' : 'Remove dislike');
+      }
+    } catch (error) {
+      toast.error('Failed to save preference');
+      console.error(error);
+    }
+  };
+
+  const handleBookmark = async () => {
+    try {
+      const response = await fetch(`${API_URL}/problem-metadata/${problemId}/bookmark`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setBookmarked(data.bookmarked);
+        toast.success(data.bookmarked ? '🔖 Bookmarked!' : '🔖 Bookmark removed');
+      }
+    } catch (error) {
+      toast.error('Failed to save bookmark');
+      console.error(error);
     }
   };
 
@@ -429,6 +538,49 @@ export default function CodeEditorNew() {
                     </ul>
                   </div>
                 )}
+
+                {/* Hints Section */}
+                {hints.length > 0 && (
+                  <div>
+                    <div className="flex items-center justify-between mb-3">
+                      <h3 className="text-sm font-semibold flex items-center gap-2">
+                        <Lightbulb className="w-4 h-4 text-yellow-500" />
+                        Hints
+                      </h3>
+                      <button
+                        onClick={() => setShowHints(!showHints)}
+                        className={`text-xs px-2 py-1 rounded ${bgSecondary} ${hoverBg} transition`}
+                      >
+                        {showHints ? 'Hide' : 'Show'}
+                      </button>
+                    </div>
+
+                    {showHints && (
+                      <div className="space-y-2">
+                        {hints.map((hint) => (
+                          <div
+                            key={hint.id}
+                            className={`${bgSecondary} rounded p-3 text-sm`}
+                          >
+                            {unlockedHints.includes(hint.id) ? (
+                              <>
+                                <p className="font-semibold text-blue-500 mb-1">Hint {hint.id}: {hint.title}</p>
+                                <p className={mutedText}>{hint.content}</p>
+                              </>
+                            ) : (
+                              <button
+                                onClick={() => unlockHint(hint.id)}
+                                className="text-blue-500 hover:text-blue-400 transition font-medium"
+                              >
+                                💡 Unlock Hint {hint.id}
+                              </button>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             )}
 
@@ -511,10 +663,11 @@ export default function CodeEditorNew() {
 
               {/* Bookmark */}
               <button
-                onClick={() => setBookmarked(!bookmarked)}
+                onClick={handleBookmark}
                 className={`${hoverBg} p-1 rounded transition ${
                   bookmarked ? 'text-yellow-500' : mutedText
                 }`}
+                title="Bookmark this problem"
               >
                 <Star className="w-4 h-4" fill={bookmarked ? 'currentColor' : 'none'} />
               </button>
