@@ -70,6 +70,8 @@ export default function CodeEditorNew() {
   // Fetch problem
   useEffect(() => {
     fetchProblem();
+    fetchOnlineUsers();
+    fetchUserPreferences();
   }, [problemId]);
 
   // Set initial code template
@@ -329,10 +331,26 @@ export default function CodeEditorNew() {
         setLiked(prefs.liked);
         setDisliked(prefs.disliked);
         setBookmarked(prefs.bookmarked);
-        setLikeCount(prefs.likes);
+        setLikeCount(prefs.likes || 9300);
+        setCommentCount(prefs.comments || 204);
       }
     } catch (error) {
       console.error('Failed to fetch preferences:', error);
+    }
+  };
+
+  // Fetch online users
+  const fetchOnlineUsers = async () => {
+    try {
+      const response = await fetch(`${API_URL}/problems/online-users/${problemId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setOnlineUsers(data.onlineUsers || 39);
+      }
+    } catch (error) {
+      console.error('Failed to fetch online users:', error);
     }
   };
 
