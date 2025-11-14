@@ -119,11 +119,8 @@ export default function Resources() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3 cursor-pointer" onClick={() => navigate('/dashboard')}>
-              <div className="relative">
-                <div className="absolute inset-0 bg-gradient-to-r from-orange-500 to-red-500 rounded-lg blur-sm opacity-50"></div>
-                <div className="relative p-2 bg-gradient-to-r from-orange-500 to-red-500 rounded-lg shadow-lg">
-                  <Library className="w-5 h-5 text-white" />
-                </div>
+              <div className="p-2 bg-gradient-to-r from-orange-500 to-red-500 rounded-lg">
+                <Library className="w-5 h-5 text-white" />
               </div>
               <div>
                 <h1 className={`text-xl font-bold ${textColor}`}>Learning Resources</h1>
@@ -362,7 +359,7 @@ export default function Resources() {
         {/* CTA Section */}
         <div className={`${cardBg} rounded-2xl p-12 text-center border mt-16`} style={{ borderColor }}>
           <div className="max-w-2xl mx-auto">
-            <div className="inline-block p-4 bg-gradient-to-r from-orange-500 to-red-500 rounded-2xl mb-6">
+            <div className="inline-block p-4 bg-gradient-to-r from-orange-500 to-red-500 rounded-lg mb-6">
               <Target className="w-12 h-12 text-white" />
             </div>
             <h2 className={`text-3xl font-bold ${textColor} mb-4`}>

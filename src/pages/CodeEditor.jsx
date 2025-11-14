@@ -305,11 +305,8 @@ export default function CodeEditor() {
             </button>
             
             <div className="flex items-center gap-2">
-              <div className="relative">
-                <div className="absolute inset-0 bg-gradient-to-r from-orange-500 to-red-500 rounded-lg blur-sm opacity-50"></div>
-                <div className="relative p-1.5 bg-gradient-to-r from-orange-500 to-red-500 rounded-lg">
-                  <Code2 className="w-4 h-4 text-white" />
-                </div>
+              <div className="p-1.5 bg-gradient-to-r from-orange-500 to-red-500 rounded-lg">
+                <Code2 className="w-4 h-4 text-white" />
               </div>
               <div>
                 <h1 className={`text-sm font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
