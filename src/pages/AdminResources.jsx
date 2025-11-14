@@ -162,8 +162,11 @@ export default function AdminResources() {
                 <span className="text-sm font-medium">Back to Admin</span>
               </button>
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-gradient-to-r from-orange-500 to-red-500 rounded-lg">
-                  <Code2 className="w-5 h-5 text-white" />
+                <div className="relative">
+                  <div className="absolute inset-0 bg-gradient-to-r from-orange-500 to-red-500 rounded-lg blur-sm opacity-50"></div>
+                  <div className="relative p-2 bg-gradient-to-r from-orange-500 to-red-500 rounded-lg shadow-lg">
+                    <Code2 className="w-5 h-5 text-white" />
+                  </div>
                 </div>
                 <h1 className={`text-xl font-bold ${textColor}`}>
                   Manage Resources
