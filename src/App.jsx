@@ -32,6 +32,7 @@ import ContestDetail from './pages/ContestDetail';
 import ContestLive from './pages/ContestLive';
 import Notifications from './pages/Notifications';
 import Resources from './pages/Resources';
+import ResourceDetail from './pages/ResourceDetail';
 import AdminResources from './pages/AdminResources';
 import CodeEditorNew from './pages/CodeEditorNew';
 
@@ -137,6 +138,7 @@ function AppRoutes() {
         <Route path="/profile/:username" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
         <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
         <Route path="/resources" element={<ProtectedRoute><Resources /></ProtectedRoute>} />
+        <Route path="/resources/:id" element={<ProtectedRoute><ResourceDetail /></ProtectedRoute>} />
         <Route path="/admin/resources" element={<ProtectedRoute><AdminResources /></ProtectedRoute>} />
 
         <Route path="*" element={<Navigate to="/" />} />

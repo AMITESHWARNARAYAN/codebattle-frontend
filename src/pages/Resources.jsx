@@ -252,10 +252,10 @@ export default function Resources() {
                     onMouseEnter={() => setHoveredCard(resource._id)}
                     onMouseLeave={() => setHoveredCard(null)}
                     onClick={() => {
-                      if (resource.url) {
+                      if (resource.type === 'external' && resource.url) {
                         window.open(resource.url, '_blank');
                       } else {
-                        navigate(`/resource/${resource._id}`);
+                        navigate(`/resources/${resource._id}`);
                       }
                     }}
                   >
