@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useNotificationStore } from '../store/notificationStore';
 import { BellIcon, CheckIcon, TrashIcon, ChevronLeftIcon, FunnelIcon } from '@heroicons/react/24/solid';
-import NotificationBellIcon from '../components/NotificationBellIcon';
 import ThemeToggle from '../components/ThemeToggle';
 
 export default function Notifications() {
