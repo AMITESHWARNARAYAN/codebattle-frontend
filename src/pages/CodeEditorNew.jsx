@@ -4,13 +4,20 @@ import { useAuthStore } from '../store/authStore';
 import { useThemeStore } from '../store/themeStore';
 import Editor from '@monaco-editor/react';
 import { toast } from 'react-hot-toast';
-import { 
-  Play, Send, ChevronLeft, ChevronRight, ChevronDown, Settings, 
-  Clock, CheckCircle2, XCircle, Loader2, Code2, FileText, 
-  MessageSquare, BarChart3, Lightbulb, BookOpen, ThumbsUp, ThumbsDown,
-  Share2, Star, Eye, EyeOff, RotateCcw, Maximize2, Minimize2, Shuffle,
-  ExternalLink, Menu, Users, Bookmark, Info, ListOrdered
-} from 'lucide-react';
+import {
+  PlayIcon, PaperAirplaneIcon, ChevronLeftIcon, ChevronRightIcon, ChevronDownIcon,
+  Cog6ToothIcon, ClockIcon, CheckCircleIcon, XCircleIcon, ArrowPathIcon,
+  CodeBracketIcon, DocumentTextIcon, ChatBubbleLeftIcon, BarChartIcon,
+  LightBulbIcon, BookOpenIcon, HandThumbUpIcon, HandThumbDownIcon,
+  ShareIcon, StarIcon, EyeIcon, EyeSlashIcon, ArrowsPointingOutIcon,
+  ArrowsPointingInIcon, SparklesIcon, ArrowTopRightOnSquareIcon, Bars3Icon,
+  UserGroupIcon, BookmarkIcon, InformationCircleIcon, ListBulletIcon,
+  PlusIcon, XMarkIcon
+} from '@heroicons/react/24/solid';
+import {
+  PlayIcon as PlayOutline, HandThumbUpIcon as HandThumbUpOutline,
+  HandThumbDownIcon as HandThumbDownOutline, StarIcon as StarOutline
+} from '@heroicons/react/24/outline';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
@@ -446,7 +453,9 @@ export default function CodeEditorNew() {
   if (loading) {
     return (
       <div className={`min-h-screen ${bgColor} flex items-center justify-center`}>
-        <Loader2 className="w-8 h-8 animate-spin text-orange-500" />
+        <div className="animate-spin">
+          <ArrowPathIcon className="w-8 h-8 text-blue-600" />
+        </div>
       </div>
     );
   }
@@ -461,7 +470,7 @@ export default function CodeEditorNew() {
             onClick={() => navigate('/problems')}
             className={`${hoverBg} p-1.5 rounded transition`}
           >
-            <Code2 className="w-5 h-5 text-orange-500" />
+            <CodeBracketIcon className="w-5 h-5 text-blue-600" />
           </button>
 
           {/* Problem Navigation */}
@@ -471,21 +480,21 @@ export default function CodeEditorNew() {
               className={`${hoverBg} p-1.5 rounded transition`}
               title="Previous Problem"
             >
-              <ChevronLeft className="w-4 h-4" />
+              <ChevronLeftIcon className="w-4 h-4" />
             </button>
             <button
               onClick={() => navigate('/problems')}
               className={`${hoverBg} p-1.5 rounded transition`}
               title="Problem List"
             >
-              <Menu className="w-4 h-4" />
+              <Bars3Icon className="w-4 h-4" />
             </button>
             <button
               onClick={goToNextProblem}
               className={`${hoverBg} p-1.5 rounded transition`}
               title="Next Problem"
             >
-              <ChevronRight className="w-4 h-4" />
+              <ChevronRightIcon className="w-4 h-4" />
             </button>
           </div>
 
@@ -495,44 +504,45 @@ export default function CodeEditorNew() {
             className={`${hoverBg} p-1.5 rounded transition`}
             title="Random Problem"
           >
-            <Shuffle className="w-4 h-4" />
+            <SparklesIcon className="w-4 h-4" />
           </button>
         </div>
 
         {/* Right Side Actions */}
         <div className="flex items-center gap-2">
           {/* Premium Badge */}
-          <button className="px-3 py-1 bg-gradient-to-r from-yellow-400 to-orange-400 text-gray-900 rounded text-xs font-semibold">
+          <button className="px-3 py-1 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded text-xs font-semibold hover:from-blue-700 hover:to-purple-700 transition">
             Premium
           </button>
 
           {/* Icons */}
-          <button className={`${hoverBg} p-1.5 rounded transition`}>
-            <Users className="w-4 h-4" />
+          <button className={`${hoverBg} p-1.5 rounded transition`} title="Online Users">
+            <UserGroupIcon className="w-4 h-4" />
           </button>
           
-          <button className={`${hoverBg} p-1.5 rounded transition`}>
-            <Settings className="w-4 h-4" />
+          <button className={`${hoverBg} p-1.5 rounded transition`} title="Settings">
+            <Cog6ToothIcon className="w-4 h-4" />
           </button>
 
           <button 
             onClick={() => setIsFullscreen(!isFullscreen)}
             className={`${hoverBg} p-1.5 rounded transition`}
+            title="Toggle Fullscreen"
           >
-            {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+            {isFullscreen ? <ArrowsPointingInIcon className="w-4 h-4" /> : <ArrowsPointingOutIcon className="w-4 h-4" />}
           </button>
 
           <div className={`${hoverBg} p-1.5 rounded cursor-pointer`}>
             <span className="text-sm font-medium">0</span>
           </div>
 
-          <button className={`${hoverBg} p-1.5 rounded transition`}>
-            <Clock className="w-4 h-4" />
+          <button className={`${hoverBg} p-1.5 rounded transition`} title="Timer">
+            <ClockIcon className="w-4 h-4" />
           </button>
 
           {/* Avatar */}
-          <div className="w-7 h-7 rounded-full bg-gradient-to-br from-orange-500 to-red-500 flex items-center justify-center text-white text-xs font-bold">
-            A
+          <div className="w-7 h-7 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-xs font-bold">
+            {user?.username?.charAt(0)?.toUpperCase() || 'A'}
           </div>
         </div>
       </header>
@@ -547,10 +557,10 @@ export default function CodeEditorNew() {
           {/* Tabs */}
           <div className={`border-b ${borderColor} flex`}>
             {[
-              { id: 'description', label: 'Description', icon: FileText },
-              { id: 'editorial', label: 'Editorial', icon: BookOpen },
-              { id: 'solutions', label: 'Solutions', icon: Users },
-              { id: 'submissions', label: 'Submissions', icon: ListOrdered }
+              { id: 'description', label: 'Description', icon: DocumentTextIcon },
+              { id: 'editorial', label: 'Editorial', icon: BookOpenIcon },
+              { id: 'solutions', label: 'Solutions', icon: UserGroupIcon },
+              { id: 'submissions', label: 'Submissions', icon: ListBulletIcon }
             ].map((tab) => {
               const Icon = tab.icon;
               return (
@@ -673,7 +683,7 @@ export default function CodeEditorNew() {
                   <div>
                     <div className="flex items-center justify-between mb-3">
                       <h3 className="text-sm font-semibold flex items-center gap-2">
-                        <Lightbulb className="w-4 h-4 text-yellow-500" />
+                        <LightBulbIcon className="w-4 h-4 text-yellow-500" />
                         Hints
                       </h3>
                       <button
@@ -693,15 +703,16 @@ export default function CodeEditorNew() {
                           >
                             {unlockedHints.includes(hint.id) ? (
                               <>
-                                <p className="font-semibold text-blue-500 mb-1">Hint {hint.id}: {hint.title}</p>
+                                <p className="font-semibold text-blue-600 dark:text-blue-400 mb-1">Hint {hint.id}: {hint.title}</p>
                                 <p className={mutedText}>{hint.content}</p>
                               </>
                             ) : (
                               <button
                                 onClick={() => unlockHint(hint.id)}
-                                className="text-blue-500 hover:text-blue-400 transition font-medium"
+                                className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition font-medium flex items-center gap-2"
                               >
-                                💡 Unlock Hint {hint.id}
+                                <LightBulbIcon className="w-4 h-4" />
+                                Unlock Hint {hint.id}
                               </button>
                             )}
                           </div>
@@ -739,7 +750,7 @@ export default function CodeEditorNew() {
                   </div>
                 ) : (
                   <div className={`${bgSecondary} rounded-lg p-6 text-center`}>
-                    <BookOpen className="w-12 h-12 mx-auto mb-3 text-orange-500" />
+                    <BookOpenIcon className="w-12 h-12 mx-auto mb-3 text-blue-600" />
                     <p className={`text-sm ${mutedText} mb-4`}>
                       Editorial not available for this problem
                     </p>
@@ -759,7 +770,7 @@ export default function CodeEditorNew() {
                   </select>
                 </div>
                 <div className={`${bgSecondary} rounded-lg p-6 text-center`}>
-                  <Users className="w-12 h-12 mx-auto mb-3 text-blue-500" />
+                  <UserGroupIcon className="w-12 h-12 mx-auto mb-3 text-blue-600" />
                   <p className={`text-sm ${mutedText}`}>
                     Solve the problem to unlock community solutions
                   </p>
@@ -778,8 +789,18 @@ export default function CodeEditorNew() {
                         className={`${bgSecondary} rounded p-3 text-sm`}
                       >
                         <div className="flex items-center justify-between mb-1">
-                          <span className="font-medium">
-                            {submission.status === 'Accepted' ? '✅' : '❌'} {submission.status}
+                          <span className="font-medium flex items-center gap-2">
+                            {submission.status === 'Accepted' ? (
+                              <>
+                                <CheckCircleIcon className="w-4 h-4 text-green-600" />
+                                <span className="text-green-600">{submission.status}</span>
+                              </>
+                            ) : (
+                              <>
+                                <XCircleIcon className="w-4 h-4 text-red-600" />
+                                <span className="text-red-600">{submission.status}</span>
+                              </>
+                            )}
                           </span>
                           <span className={`text-xs ${mutedText}`}>
                             {submission.language}
@@ -798,7 +819,7 @@ export default function CodeEditorNew() {
                   </div>
                 ) : (
                   <div className={`${bgSecondary} rounded-lg p-6 text-center`}>
-                    <ListOrdered className="w-12 h-12 mx-auto mb-3 text-green-500" />
+                    <ListBulletIcon className="w-12 h-12 mx-auto mb-3 text-green-600" />
                     <p className={`text-sm ${mutedText}`}>
                       Your submissions will appear here
                     </p>
@@ -815,10 +836,15 @@ export default function CodeEditorNew() {
               <button
                 onClick={handleLike}
                 className={`flex items-center gap-1.5 ${hoverBg} px-2 py-1 rounded transition ${
-                  liked ? 'text-blue-500' : mutedText
+                  liked ? 'text-blue-600' : mutedText
                 }`}
+                title="Like this problem"
               >
-                <ThumbsUp className="w-4 h-4" fill={liked ? 'currentColor' : 'none'} />
+                {liked ? (
+                  <HandThumbUpIcon className="w-4 h-4" />
+                ) : (
+                  <HandThumbUpOutline className="w-4 h-4" />
+                )}
                 <span className="font-medium">{formatLikeCount(likeCount)}</span>
               </button>
 
@@ -826,15 +852,20 @@ export default function CodeEditorNew() {
               <button
                 onClick={handleDislike}
                 className={`${hoverBg} p-1 rounded transition ${
-                  disliked ? 'text-red-500' : mutedText
+                  disliked ? 'text-red-600' : mutedText
                 }`}
+                title="Dislike this problem"
               >
-                <ThumbsDown className="w-4 h-4" fill={disliked ? 'currentColor' : 'none'} />
+                {disliked ? (
+                  <HandThumbDownIcon className="w-4 h-4" />
+                ) : (
+                  <HandThumbDownOutline className="w-4 h-4" />
+                )}
               </button>
 
               {/* Comments */}
-              <button className={`flex items-center gap-1.5 ${hoverBg} px-2 py-1 rounded transition ${mutedText}`}>
-                <MessageSquare className="w-4 h-4" />
+              <button className={`flex items-center gap-1.5 ${hoverBg} px-2 py-1 rounded transition ${mutedText}`} title="Comments">
+                <ChatBubbleLeftIcon className="w-4 h-4" />
                 <span className="font-medium">{commentCount}</span>
               </button>
 
@@ -842,26 +873,30 @@ export default function CodeEditorNew() {
               <button
                 onClick={handleBookmark}
                 className={`${hoverBg} p-1 rounded transition ${
-                  bookmarked ? 'text-yellow-500' : mutedText
+                  bookmarked ? 'text-amber-600' : mutedText
                 }`}
                 title="Bookmark this problem"
               >
-                <Star className="w-4 h-4" fill={bookmarked ? 'currentColor' : 'none'} />
+                {bookmarked ? (
+                  <StarIcon className="w-4 h-4" />
+                ) : (
+                  <StarOutline className="w-4 h-4" />
+                )}
               </button>
 
               {/* Share */}
-              <button className={`${hoverBg} p-1 rounded transition ${mutedText}`}>
-                <Share2 className="w-4 h-4" />
+              <button className={`${hoverBg} p-1 rounded transition ${mutedText}`} title="Share">
+                <ShareIcon className="w-4 h-4" />
               </button>
 
               {/* External Link */}
-              <button className={`${hoverBg} p-1 rounded transition ${mutedText}`}>
-                <ExternalLink className="w-4 h-4" />
+              <button className={`${hoverBg} p-1 rounded transition ${mutedText}`} title="Open in new tab">
+                <ArrowTopRightOnSquareIcon className="w-4 h-4" />
               </button>
 
               {/* Info */}
-              <button className={`${hoverBg} p-1 rounded transition ${mutedText}`}>
-                <Info className="w-4 h-4" />
+              <button className={`${hoverBg} p-1 rounded transition ${mutedText}`} title="Problem info">
+                <InformationCircleIcon className="w-4 h-4" />
               </button>
             </div>
 
@@ -902,8 +937,8 @@ export default function CodeEditorNew() {
           <div className={`border-b ${borderColor} px-4 py-2 flex items-center justify-between`}>
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
-                <Code2 className="w-4 h-4" />
-                <span className="text-sm font-medium">Code</span>
+                <CodeBracketIcon className="w-4 h-4 text-blue-600" />
+                <span className="text-sm font-medium">Code Editor</span>
               </div>
             </div>
             
@@ -923,7 +958,7 @@ export default function CodeEditorNew() {
               {/* Auto Toggle */}
               <div className="flex items-center gap-2">
                 <button className={`flex items-center gap-1 px-2 py-1 text-xs ${bgSecondary} rounded ${mutedText}`}>
-                  <Settings className="w-3 h-3" />
+                  <Cog6ToothIcon className="w-3 h-3" />
                   Auto
                 </button>
               </div>
@@ -954,17 +989,17 @@ export default function CodeEditorNew() {
             <div className="flex items-center gap-2">
               {/* Icons */}
               <button className={`${hoverBg} p-1 rounded transition`} title="Settings">
-                <Settings className="w-3.5 h-3.5" />
+                <Cog6ToothIcon className="w-3.5 h-3.5" />
               </button>
               <button className={`${hoverBg} p-1 rounded transition`} title="Fullscreen">
-                <Maximize2 className="w-3.5 h-3.5" />
+                <ArrowsPointingOutIcon className="w-3.5 h-3.5" />
               </button>
               <button 
                 onClick={handleReset}
                 className={`${hoverBg} p-1 rounded transition`} 
                 title="Reset"
               >
-                <RotateCcw className="w-3.5 h-3.5" />
+                <ArrowPathIcon className="w-3.5 h-3.5" />
               </button>
             </div>
           </div>
@@ -1205,18 +1240,18 @@ export default function CodeEditorNew() {
                 disabled={running}
                 className={`px-4 py-2 rounded text-sm font-medium transition flex items-center gap-2 ${
                   isDark 
-                    ? 'bg-[#333333] hover:bg-[#3a3a3a] text-white' 
-                    : 'bg-gray-200 hover:bg-gray-300 text-gray-900'
+                    ? 'bg-gray-700 hover:bg-gray-600 text-white disabled:opacity-50' 
+                    : 'bg-gray-200 hover:bg-gray-300 text-gray-900 disabled:opacity-50'
                 }`}
               >
                 {running ? (
                   <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <ArrowPathIcon className="w-4 h-4 animate-spin" />
                     Running...
                   </>
                 ) : (
                   <>
-                    <Play className="w-4 h-4" />
+                    <PlayIcon className="w-4 h-4" />
                     Run
                   </>
                 )}

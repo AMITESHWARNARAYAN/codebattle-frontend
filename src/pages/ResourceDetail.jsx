@@ -323,7 +323,17 @@ export default function ResourceDetail() {
                                   </div>
                                 </div>
 
-                                {problem.url && (
+                                {problem.problemId ? (
+                                  <button
+                                    onClick={() => navigate(`/practice/${problem.problemId}`)}
+                                    className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
+                                      isDark ? 'bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white' : 'bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white'
+                                    }`}
+                                  >
+                                    <span className="text-sm font-medium">Solve</span>
+                                    <Code2 className="w-4 h-4" />
+                                  </button>
+                                ) : problem.url && (
                                   <a
                                     href={problem.url}
                                     target="_blank"
