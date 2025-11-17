@@ -69,28 +69,54 @@ export default function CodeEditorNew() {
 
   // Fetch problem
   useEffect(() => {
-    fetchProblem();
-    fetchOnlineUsers();
-    fetchUserPreferences();
-  }, [problemId]);
-
-  // Set initial code template
-  useEffect(() => {
-    if (problem?.functionSignature && !code) {
-      setCode(problem.functionSignature[language] || '');
+    if (problemId && token) {
+      fetchProblem();
+      fetchOnlineUsers();
     }
-  }, [problem, language]);
+  }, [problemId, token]);
+
+  // Load saved code or template when language changes
+  useEffect(() => {
+    if (problemId && language && problem) {
+      const savedCode = localStorage.getItem(`code_${problemId}_${language}`);
+      if (savedCode) {
+        setCode(savedCode);
+      } else if (problem.functionSignature?.[language]) {
+        // Use template if no saved code
+        setCode(problem.functionSignature[language]);
+      } else {
+        setCode('');
+      }
+    }
+  }, [problemId, language, problem]);
 
   const fetchProblem = async () => {
     try {
       const response = await fetch(`${API_URL}/problems/${problemId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch problem');
+      }
+      
       const data = await response.json();
       setProblem(data);
-      // Fetch hints for the problem
-      fetchHints();
+      
+      // Process hints after problem is loaded
+      if (data?.hints && data.hints.length > 0) {
+        const formattedHints = data.hints.map((hint, idx) => ({
+          id: idx + 1,
+          title: typeof hint === 'string' ? `Hint ${idx + 1}` : (hint.title || `Hint ${idx + 1}`),
+          content: typeof hint === 'string' ? hint : hint.content
+        }));
+        setHints(formattedHints);
+      }
+      
+      // Fetch user preferences
+      fetchUserPreferences();
     } catch (error) {
+      console.error('Fetch problem error:', error);
       toast.error('Failed to load problem');
       navigate('/problems');
     } finally {
@@ -98,19 +124,7 @@ export default function CodeEditorNew() {
     }
   };
 
-  const fetchHints = async () => {
-    try {
-      const response = await fetch(`${API_URL}/judge/hints/${problemId}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setHints(data.hints || []);
-      }
-    } catch (error) {
-      console.error('Failed to fetch hints:', error);
-    }
-  };
+
 
   const fetchEditorial = async () => {
     try {
@@ -128,15 +142,19 @@ export default function CodeEditorNew() {
 
   const fetchSubmissions = async () => {
     try {
-      const response = await fetch(`${API_URL}/submissions?problemId=${problemId}`, {
+      const response = await fetch(`${API_URL}/submissions?problemId=${problemId}&limit=10`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (response.ok) {
         const data = await response.json();
         setSubmissions(data.submissions || []);
+      } else {
+        console.error('Failed to fetch submissions');
+        setSubmissions([]);
       }
     } catch (error) {
       console.error('Failed to fetch submissions:', error);
+      setSubmissions([]);
     }
   };
 
@@ -146,53 +164,55 @@ export default function CodeEditorNew() {
     }
   };
 
+  // Fetch tabs data when switching
+  useEffect(() => {
+    if (leftPanelTab === 'editorial' && !editorial) {
+      fetchEditorial();
+    } else if (leftPanelTab === 'solutions') {
+      // Fetch solutions if needed
+    } else if (leftPanelTab === 'submissions') {
+      fetchSubmissions();
+    }
+  }, [leftPanelTab]);
+
   // Problem Navigation
   const goToPreviousProblem = async () => {
     try {
-      const response = await fetch(`${API_URL}/problems?skip=${Math.max(0, parseInt(problemId) - 1)}&limit=1`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      if (response.ok) {
-        const data = await response.json();
-        if (data.problems && data.problems.length > 0) {
-          navigate(`/problem/${data.problems[0]._id}`);
-        }
-      }
+      // For now, just show a message. In production, fetch problem list and navigate
+      toast.info('Navigate to previous problem');
+      // TODO: Implement proper navigation with problem list
     } catch (error) {
+      console.error('Navigation error:', error);
       toast.error('Failed to load previous problem');
     }
   };
 
   const goToNextProblem = async () => {
     try {
-      const response = await fetch(`${API_URL}/problems?skip=${parseInt(problemId) + 1}&limit=1`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      if (response.ok) {
-        const data = await response.json();
-        if (data.problems && data.problems.length > 0) {
-          navigate(`/problem/${data.problems[0]._id}`);
-        } else {
-          toast.info('No more problems');
-        }
-      }
+      // For now, just show a message. In production, fetch problem list and navigate
+      toast.info('Navigate to next problem');
+      // TODO: Implement proper navigation with problem list
     } catch (error) {
+      console.error('Navigation error:', error);
       toast.error('Failed to load next problem');
     }
   };
 
   const goToRandomProblem = async () => {
     try {
-      const response = await fetch(`${API_URL}/problems?random=true&limit=1`, {
+      const response = await fetch(`${API_URL}/problems/random`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (response.ok) {
         const data = await response.json();
-        if (data.problems && data.problems.length > 0) {
-          navigate(`/problem/${data.problems[0]._id}`);
+        if (data && data._id) {
+          navigate(`/problem/${data._id}`);
+        } else {
+          toast.error('No random problem found');
         }
       }
     } catch (error) {
+      console.error('Random problem error:', error);
       toast.error('Failed to load random problem');
     }
   };
@@ -313,13 +333,6 @@ export default function CodeEditorNew() {
       default: return isDark ? 'text-gray-400' : 'text-gray-600';
     }
   };
-
-  // Fetch user preferences
-  useEffect(() => {
-    if (problemId && token) {
-      fetchUserPreferences();
-    }
-  }, [problemId, token]);
 
   const fetchUserPreferences = async () => {
     try {
@@ -1103,11 +1116,21 @@ export default function CodeEditorNew() {
 
                       {/* Test Case Input */}
                       <div>
-                        <label className="text-sm font-medium mb-1 block">nums =</label>
-                        <div className={`${bgSecondary} rounded p-3 font-mono text-sm`}>
-                          {problem?.testCases?.[selectedTestCase]?.input}
+                        <label className="text-sm font-medium mb-1 block">Input:</label>
+                        <div className={`${bgSecondary} rounded p-3 font-mono text-sm whitespace-pre-wrap`}>
+                          {problem?.testCases?.[selectedTestCase]?.input || 'No input'}
                         </div>
                       </div>
+                      
+                      {/* Expected Output */}
+                      {problem?.testCases?.[selectedTestCase]?.expectedOutput && (
+                        <div>
+                          <label className="text-sm font-medium mb-1 block">Expected Output:</label>
+                          <div className={`${bgSecondary} rounded p-3 font-mono text-sm whitespace-pre-wrap`}>
+                            {problem.testCases[selectedTestCase].expectedOutput}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
 
@@ -1131,27 +1154,35 @@ export default function CodeEditorNew() {
                           </div>
 
                           {/* Stats */}
-                          {testResults.status === 'Accepted' && (
+                          {testResults.executionTime && (
                             <div className="grid grid-cols-2 gap-4">
                               <div>
                                 <p className={`text-xs ${mutedText} mb-1`}>Runtime</p>
                                 <p className="text-sm font-semibold">{testResults.executionTime}ms</p>
-                                <p className="text-xs text-green-500">Beats 85.2%</p>
+                                {testResults.status === 'Accepted' && (
+                                  <p className="text-xs text-green-500">Beats 85.2%</p>
+                                )}
                               </div>
                               <div>
                                 <p className={`text-xs ${mutedText} mb-1`}>Memory</p>
-                                <p className="text-sm font-semibold">{testResults.memoryUsed?.toFixed(2)}MB</p>
-                                <p className="text-xs text-green-500">Beats 72.4%</p>
+                                <p className="text-sm font-semibold">
+                                  {testResults.memoryUsed ? `${testResults.memoryUsed.toFixed(2)}MB` : 'N/A'}
+                                </p>
+                                {testResults.status === 'Accepted' && (
+                                  <p className="text-xs text-green-500">Beats 72.4%</p>
+                                )}
                               </div>
                             </div>
                           )}
 
                           {/* Test Cases Passed */}
-                          <div>
-                            <p className="text-sm font-medium mb-1">
-                              Test Cases: {testResults.testCasesPassed}/{testResults.totalTestCases}
-                            </p>
-                          </div>
+                          {(testResults.testCasesPassed !== undefined && testResults.totalTestCases !== undefined) && (
+                            <div>
+                              <p className="text-sm font-medium mb-1">
+                                Test Cases: {testResults.testCasesPassed}/{testResults.totalTestCases}
+                              </p>
+                            </div>
+                          )}
 
                           {/* Output */}
                           {testResults.output && (

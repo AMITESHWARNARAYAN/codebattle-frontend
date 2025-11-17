@@ -10,6 +10,8 @@ import { submitCodeNotification, onOpponentSubmitted } from '../utils/socket';
 import { toast } from 'react-hot-toast';
 import { Play, Send, Clock, Flag, Moon, Sun, ExternalLink, Lightbulb, BookOpen, Zap, ChevronLeft, ChevronRight, Settings, Users, Share2, Award, Trophy, Code2, Terminal, Maximize2, Minimize2, RotateCcw } from 'lucide-react';
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+
 export default function CodeEditor() {
   const { matchId } = useParams();
   const [searchParams] = useSearchParams();
@@ -25,6 +27,7 @@ export default function CodeEditor() {
   const [code, setCode] = useState('');
   const [language, setLanguage] = useState('cpp');
   const [submitting, setSubmitting] = useState(false);
+  const [running, setRunning] = useState(false);
   const [timeLeft, setTimeLeft] = useState(600); // 10 minutes
   const [timerEnabled, setTimerEnabled] = useState(true);
   const [match, setMatch] = useState(currentMatch);
@@ -73,7 +76,27 @@ export default function CodeEditor() {
         setCode(signature);
       }
     }
-  }, [match, contestProblem, language, isContestMode]);
+  }, [match, contestProblem, language, isContestMode, code]);
+
+  // Load saved code from localStorage
+  useEffect(() => {
+    if (problemId && language) {
+      const savedCode = localStorage.getItem(`code_${problemId}_${language}`);
+      if (savedCode && !code) {
+        setCode(savedCode);
+      }
+    }
+  }, [problemId, language]);
+
+  // Auto-save code to localStorage
+  useEffect(() => {
+    if (code && problemId) {
+      const timer = setTimeout(() => {
+        localStorage.setItem(`code_${problemId}_${language}`, code);
+      }, 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [code, problemId, language]);
 
   // Timer with auto-submit (only for solo practice with timer enabled)
   useEffect(() => {
@@ -121,6 +144,8 @@ export default function CodeEditor() {
     }
 
     setSubmitting(true);
+    setTestResults(null); // Clear previous results
+    
     try {
       // Contest mode submission
       if (isContestMode) {
@@ -144,14 +169,20 @@ export default function CodeEditor() {
         setTestResults(result.executionResult);
 
         // Notify opponent
-        submitCodeNotification(matchId, user._id, user.username);
+        if (match?.matchType !== 'solo') {
+          submitCodeNotification(matchId, user._id, user.username);
+        }
 
-        toast.success('Code submitted!');
-        console.log('Code submitted - staying on editor page (no redirect)');
+        if (result.executionResult?.status === 'Accepted') {
+          toast.success('✅ All test cases passed!');
+        } else {
+          toast.error(`❌ ${result.executionResult?.status || 'Submission failed'}`);
+        }
 
-        // Don't redirect - stay on code editor to see results
+        console.log('Code submitted - staying on editor page');
       }
     } catch (error) {
+      console.error('Submit error:', error);
       toast.error(error.response?.data?.message || 'Failed to submit code');
     } finally {
       setSubmitting(false);
@@ -159,7 +190,7 @@ export default function CodeEditor() {
   };
 
   const handleGiveUp = async () => {
-    if (match.matchType === 'solo') {
+    if (!match || match.matchType === 'solo') {
       toast.error('Cannot give up in solo practice');
       return;
     }
@@ -177,6 +208,7 @@ export default function CodeEditor() {
         navigate(`/results/${matchId}`);
       }, 1500);
     } catch (error) {
+      console.error('Give up error:', error);
       toast.error(error.response?.data?.message || 'Failed to give up');
     } finally {
       setGivingUp(false);
@@ -184,35 +216,118 @@ export default function CodeEditor() {
   };
 
   const handleGenerateExplanation = async () => {
+    if (!match?.problem?._id) {
+      toast.error('Problem data not available');
+      return;
+    }
+    
     try {
       setShowExplanation(true);
       await generateExplanation(match.problem._id, token);
       toast.success('Explanation generated!');
     } catch (error) {
+      console.error('Generate explanation error:', error);
       toast.error('Failed to generate explanation');
       setShowExplanation(false);
     }
   };
 
   const handleGenerateGuidance = async () => {
+    if (!match?.problem?._id) {
+      toast.error('Problem data not available');
+      return;
+    }
+    
+    if (!code.trim()) {
+      toast.error('Please write some code first');
+      return;
+    }
+    
     try {
       setShowGuidance(true);
       await generateGuidance(match.problem._id, code, token);
       toast.success('Guidance generated!');
     } catch (error) {
+      console.error('Generate guidance error:', error);
       toast.error('Failed to generate guidance');
       setShowGuidance(false);
     }
   };
 
   const handleGenerateSolution = async () => {
+    if (!match?.problem?._id) {
+      toast.error('Problem data not available');
+      return;
+    }
+    
     try {
       setShowSolution(true);
       await generateSolution(match.problem._id, token);
       toast.success('Solution generated!');
     } catch (error) {
+      console.error('Generate solution error:', error);
       toast.error('Failed to generate solution');
       setShowSolution(false);
+    }
+  };
+
+  const handleRunCode = async () => {
+    if (!code.trim()) {
+      toast.error('Please write some code first');
+      return;
+    }
+
+    setRunning(true);
+    setTestResults(null);
+
+    try {
+      const response = await fetch(`${API_URL}/judge/run`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          code,
+          language,
+          problemId: problem?._id,
+          testCaseIndex: 0 // Run first test case
+        })
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to run code');
+      }
+
+      const result = await response.json();
+      setTestResults({
+        status: result.status || 'Accepted',
+        testCasesPassed: result.status === 'Accepted' ? 1 : 0,
+        totalTestCases: 1,
+        executionTime: result.executionTime || 0,
+        memoryUsed: result.memoryUsed || 0,
+        outputs: result.output ? [{
+          testCase: 1,
+          passed: result.status === 'Accepted',
+          actualOutput: result.output,
+          error: result.error
+        }] : [],
+        errors: result.error ? [result.error] : []
+      });
+
+      if (result.status === 'Accepted') {
+        toast.success('✅ Test case passed!');
+      } else if (result.error) {
+        toast.error('❌ Runtime Error');
+      } else {
+        toast.error('❌ Wrong Answer');
+      }
+    } catch (error) {
+      console.error('Run code error:', error);
+      toast.error(`Error: ${error.message || 'Failed to run code'}`);
+    } finally {
+      setRunning(false);
     }
   };
 
@@ -779,16 +894,25 @@ export default function CodeEditor() {
           {/* Bottom Action Bar - TensorFlow Style */}
           <div className={`border-t px-6 py-3 flex gap-3 flex-shrink-0 ${isDark ? 'bg-[#1a1a1a] border-[#2a2a2a]' : 'bg-white border-gray-200'}`}>
             <button
-              onClick={handleSubmit}
-              disabled={submitting || (!isContestMode && timeLeft === 0)}
+              onClick={handleRunCode}
+              disabled={running}
               className={`px-5 py-2 rounded-lg text-sm font-medium flex items-center justify-center gap-2 transition-all ${
-                submitting || (!isContestMode && timeLeft === 0)
+                running
                   ? 'bg-gray-600 text-gray-300 cursor-not-allowed'
                   : isDark ? 'bg-dark-800 hover:bg-dark-700 text-white border border-dark-700' : 'bg-white hover:bg-gray-50 text-gray-900 border border-gray-300'
               }`}
             >
-              <Play className="w-4 h-4" />
-              <span>Run Code</span>
+              {running ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  <span>Running...</span>
+                </>
+              ) : (
+                <>
+                  <Play className="w-4 h-4" />
+                  <span>Run Code</span>
+                </>
+              )}
             </button>
             <button
               onClick={handleSubmit}
