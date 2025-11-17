@@ -178,9 +178,20 @@ export default function CodeEditorNew() {
   // Problem Navigation
   const goToPreviousProblem = async () => {
     try {
-      // For now, just show a message. In production, fetch problem list and navigate
-      toast.info('Navigate to previous problem');
-      // TODO: Implement proper navigation with problem list
+      const response = await fetch(`${API_URL}/problems/${problemId}/previous`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        if (data && data._id) {
+          navigate(`/problem/${data._id}`);
+        } else {
+          toast.error('No previous problem found');
+        }
+      } else {
+        const error = await response.json();
+        toast.error(error.message || 'Failed to load previous problem');
+      }
     } catch (error) {
       console.error('Navigation error:', error);
       toast.error('Failed to load previous problem');
@@ -189,9 +200,20 @@ export default function CodeEditorNew() {
 
   const goToNextProblem = async () => {
     try {
-      // For now, just show a message. In production, fetch problem list and navigate
-      toast.info('Navigate to next problem');
-      // TODO: Implement proper navigation with problem list
+      const response = await fetch(`${API_URL}/problems/${problemId}/next`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        if (data && data._id) {
+          navigate(`/problem/${data._id}`);
+        } else {
+          toast.error('No next problem found');
+        }
+      } else {
+        const error = await response.json();
+        toast.error(error.message || 'Failed to load next problem');
+      }
     } catch (error) {
       console.error('Navigation error:', error);
       toast.error('Failed to load next problem');
