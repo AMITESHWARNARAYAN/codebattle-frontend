@@ -139,66 +139,51 @@ export default function Profile() {
   const winRate = profile.totalMatches > 0 ? ((profile.wins / profile.totalMatches) * 100).toFixed(1) : 0;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-dark-950 dark:via-dark-900 dark:to-dark-950">
-      {/* Hero Header */}
-      <section className="relative w-full h-56 md:h-64 bg-gradient-to-r from-blue-600 via-purple-600 to-pink-500 flex items-end">
-        <div className="absolute left-0 top-0 w-full h-full opacity-30 bg-[url('https://www.transparenttextures.com/patterns/diamond-upholstery.png')]" />
-        <div className="max-w-6xl mx-auto w-full flex items-end px-6 pb-6 z-10 relative">
-          <div className="flex items-end gap-6">
-            <div className="w-32 h-32 md:w-40 md:h-40 rounded-3xl bg-white/80 dark:bg-dark-900/80 shadow-lg flex items-center justify-center text-6xl font-extrabold text-blue-700 dark:text-blue-300 border-4 border-white dark:border-dark-900">
-              {profile.username.charAt(0).toUpperCase()}
-            </div>
-            <div className="flex flex-col gap-2">
-              <div className="flex items-center gap-3">
-                <h1 className="text-3xl md:text-4xl font-extrabold text-white drop-shadow-lg">{profile.username}</h1>
-                {profile.isOnline && (
-                  <span className="px-3 py-1 bg-green-500/90 rounded-full text-xs font-semibold text-white shadow">Online</span>
-                )}
-              </div>
-              <div className="flex items-center gap-2 mt-1">
-                <span className="bg-white/80 dark:bg-dark-800/80 px-3 py-1 rounded-full text-sm font-medium text-blue-700 dark:text-blue-300 shadow">Rating: {profile.rating}</span>
-                <span className="bg-white/80 dark:bg-dark-800/80 px-3 py-1 rounded-full text-sm font-medium text-purple-700 dark:text-purple-300 shadow">Wins: {profile.wins}</span>
-                <span className="bg-white/80 dark:bg-dark-800/80 px-3 py-1 rounded-full text-sm font-medium text-pink-700 dark:text-pink-300 shadow">Losses: {profile.losses}</span>
-              </div>
-              {profile.bio && (
-                <p className="mt-2 text-white/90 text-base italic max-w-xl drop-shadow">{profile.bio}</p>
-              )}
-            </div>
-          </div>
-          <div className="ml-auto flex items-center gap-3">
+    <div className="min-h-screen bg-gray-50 dark:bg-dark-950">
+      {/* Header */}
+      <header className="bg-white dark:bg-dark-900 border-b border-gray-200 dark:border-dark-800">
+        <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
+          <button
+            onClick={() => navigate('/dashboard')}
+            className="flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition"
+          >
+            <ArrowLeft className="w-5 h-5" />
+            <span className="text-sm font-medium">Back</span>
+          </button>
+          <div className="flex items-center gap-3">
             <ThemeToggle />
             {isOwnProfile && !isEditing && (
               <button
                 onClick={() => setIsEditing(true)}
-                className="flex items-center gap-2 px-4 py-2 bg-white/90 hover:bg-blue-100 dark:bg-dark-800/90 dark:hover:bg-dark-700 text-blue-700 dark:text-white rounded-lg transition font-medium text-sm shadow"
+                className="flex items-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white hover:bg-gray-800 dark:hover:bg-gray-100 text-white dark:text-gray-900 rounded-lg transition font-medium text-sm"
               >
                 <Edit2 className="w-4 h-4" />
-                <span className="hidden md:inline">Edit Profile</span>
+                <span className="hidden md:inline">Edit</span>
               </button>
             )}
           </div>
         </div>
-      </section>
+      </header>
 
       {/* Main Content */}
-      <main className="max-w-6xl mx-auto px-6 py-12 relative z-10">
-        {/* Profile Card */}
-        <div className="bg-white/90 dark:bg-dark-900/90 border border-gray-200 dark:border-dark-800 rounded-2xl p-8 mb-8 shadow-lg -mt-24 relative z-20">
+      <main className="max-w-5xl mx-auto px-6 py-8">
+        {/* Profile Header */}
+        <div className="bg-white dark:bg-dark-900 border border-gray-200 dark:border-dark-800 rounded-lg p-8 mb-6">
           {isEditing ? (
             <div className="space-y-6">
               <div className="flex items-center justify-between mb-6">
-                <h3 className="text-2xl font-bold text-gray-900 dark:text-white">Edit Profile</h3>
+                <h3 className="text-xl font-semibold text-gray-900 dark:text-white">Edit Profile</h3>
                 <div className="flex gap-2">
                   <button
                     onClick={handleUpdateProfile}
-                    className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-all font-medium"
+                    className="flex items-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white hover:bg-gray-800 dark:hover:bg-gray-100 text-white dark:text-gray-900 rounded-lg transition font-medium text-sm"
                   >
                     <Save className="w-4 h-4" />
                     Save
                   </button>
                   <button
                     onClick={() => setIsEditing(false)}
-                    className="btn-secondary"
+                    className="flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-dark-700 hover:bg-gray-50 dark:hover:bg-dark-800 text-gray-700 dark:text-gray-300 rounded-lg transition font-medium text-sm"
                   >
                     <X className="w-4 h-4" />
                     Cancel
@@ -251,59 +236,53 @@ export default function Profile() {
             </div>
           ) : (
             <>
-              <div className="flex items-start gap-6 mb-6">
+              <div className="flex items-start gap-6 mb-8">
                 <div className="relative">
-                  <div className="w-24 h-24 bg-gray-900 dark:bg-white rounded-2xl flex items-center justify-center text-4xl font-bold text-white dark:text-gray-900">
+                  <div className="w-20 h-20 bg-gray-900 dark:bg-gray-100 rounded-lg flex items-center justify-center text-3xl font-bold text-white dark:text-gray-900">
                     {profile.username.charAt(0).toUpperCase()}
                   </div>
                   {profile.isOnline && (
-                    <div className="absolute bottom-0 right-0 w-6 h-6 bg-green-500 border-4 border-white dark:border-dark-900 rounded-full"></div>
+                    <div className="absolute bottom-0 right-0 w-4 h-4 bg-gray-900 dark:bg-gray-100 border-2 border-white dark:border-dark-900 rounded-full"></div>
                   )}
                 </div>
                 <div className="flex-1">
-                  <div className="flex items-center gap-3 mb-2">
-                    <h2 className="text-3xl font-bold text-gray-900 dark:text-white">
+                  <div className="flex items-center gap-3 mb-1">
+                    <h2 className="text-2xl font-semibold text-gray-900 dark:text-white">
                       {profile.username}
                     </h2>
-                    {profile.isOnline ? (
-                      <span className="px-3 py-1 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-500/30 rounded-full text-xs font-semibold text-green-700 dark:text-green-300">
-                        Online
-                      </span>
-                    ) : (
-                      <span className="px-3 py-1 bg-gray-100 dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-full text-xs font-semibold text-gray-600 dark:text-gray-400">
-                        Offline
-                      </span>
+                    {profile.isOnline && (
+                      <span className="w-2 h-2 bg-gray-900 dark:bg-gray-100 rounded-full"></span>
                     )}
                   </div>
                   {profile.bio && (
-                    <p className="text-gray-600 dark:text-gray-400 mb-4">{profile.bio}</p>
+                    <p className="text-gray-600 dark:text-gray-400 text-sm">{profile.bio}</p>
                   )}
                 </div>
               </div>
 
               {/* Stats Grid */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="bg-yellow-50 dark:bg-yellow-900/10 rounded-xl p-4 border border-yellow-200 dark:border-yellow-900/30">
-                  <p className="text-gray-600 dark:text-gray-400 text-sm mb-1 font-medium">Rating</p>
-                  <p className="text-3xl font-bold text-yellow-700 dark:text-yellow-400">
+                <div className="border border-gray-200 dark:border-dark-800 rounded-lg p-4">
+                  <p className="text-xs font-medium text-gray-500 dark:text-gray-500 uppercase tracking-wide mb-1">Rating</p>
+                  <p className="text-2xl font-semibold text-gray-900 dark:text-white">
                     {profile.rating}
                   </p>
                 </div>
-                <div className="bg-green-50 dark:bg-green-900/10 rounded-xl p-4 border border-green-200 dark:border-green-900/30">
-                  <p className="text-gray-600 dark:text-gray-400 text-sm mb-1 font-medium">Wins</p>
-                  <p className="text-3xl font-bold text-green-700 dark:text-green-400">
+                <div className="border border-gray-200 dark:border-dark-800 rounded-lg p-4">
+                  <p className="text-xs font-medium text-gray-500 dark:text-gray-500 uppercase tracking-wide mb-1">Wins</p>
+                  <p className="text-2xl font-semibold text-gray-900 dark:text-white">
                     {profile.wins}
                   </p>
                 </div>
-                <div className="bg-red-50 dark:bg-red-900/10 rounded-xl p-4 border border-red-200 dark:border-red-900/30">
-                  <p className="text-gray-600 dark:text-gray-400 text-sm mb-1 font-medium">Losses</p>
-                  <p className="text-3xl font-bold text-red-700 dark:text-red-400">
+                <div className="border border-gray-200 dark:border-dark-800 rounded-lg p-4">
+                  <p className="text-xs font-medium text-gray-500 dark:text-gray-500 uppercase tracking-wide mb-1">Losses</p>
+                  <p className="text-2xl font-semibold text-gray-900 dark:text-white">
                     {profile.losses}
                   </p>
                 </div>
-                <div className="bg-gray-50 dark:bg-dark-800 rounded-xl p-4 border border-gray-200 dark:border-dark-700">
-                  <p className="text-gray-600 dark:text-gray-400 text-sm mb-1 font-medium">Draws</p>
-                  <p className="text-3xl font-bold text-gray-700 dark:text-gray-300">
+                <div className="border border-gray-200 dark:border-dark-800 rounded-lg p-4">
+                  <p className="text-xs font-medium text-gray-500 dark:text-gray-500 uppercase tracking-wide mb-1">Draws</p>
+                  <p className="text-2xl font-semibold text-gray-900 dark:text-white">
                     {profile.draws}
                   </p>
                 </div>
@@ -313,69 +292,55 @@ export default function Profile() {
         </div>
 
         {/* Detailed Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-          <div className="bg-white dark:bg-dark-900 border border-gray-200 dark:border-dark-800 rounded-2xl p-6 shadow-sm">
-            <h3 className="text-xl font-bold mb-6 flex items-center gap-3 text-gray-900 dark:text-white">
-              <div className="p-2 bg-yellow-600 dark:bg-yellow-500 rounded-lg">
-                <Trophy className="w-5 h-5 text-white" />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+          <div className="bg-white dark:bg-dark-900 border border-gray-200 dark:border-dark-800 rounded-lg p-6">
+            <h3 className="text-base font-semibold mb-4 flex items-center gap-2 text-gray-900 dark:text-white">
+              <Trophy className="w-4 h-4" />
               </div>
               Performance
             </h3>
             <div className="space-y-3">
-              <div className="flex justify-between items-center p-4 bg-gray-50 dark:bg-dark-800 rounded-xl border border-gray-200 dark:border-dark-700 hover:shadow-sm transition-all">
-                <span className="text-gray-600 dark:text-gray-400 flex items-center gap-2">
-                  <Swords className="w-4 h-4" />
-                  Total Matches
-                </span>
-                <span className="font-bold text-gray-900 dark:text-white text-lg">{profile.totalMatches}</span>
+              <div className="flex justify-between items-center py-3 border-b border-gray-100 dark:border-dark-800">
+                <span className="text-sm text-gray-600 dark:text-gray-400">Total Matches</span>
+                <span className="font-semibold text-gray-900 dark:text-white">{profile.totalMatches}</span>
               </div>
-              <div className="flex justify-between items-center p-4 bg-gray-50 dark:bg-dark-800 rounded-xl border border-gray-200 dark:border-dark-700 hover:shadow-sm transition-all">
-                <span className="text-gray-600 dark:text-gray-400 flex items-center gap-2">
-                  <Target className="w-4 h-4" />
-                  Win Rate
-                </span>
-                <span className="font-bold text-green-600 dark:text-green-400 text-lg">{winRate}%</span>
+              <div className="flex justify-between items-center py-3 border-b border-gray-100 dark:border-dark-800">
+                <span className="text-sm text-gray-600 dark:text-gray-400">Win Rate</span>
+                <span className="font-semibold text-gray-900 dark:text-white">{winRate}%</span>
               </div>
-              <div className="flex justify-between items-center p-4 bg-gray-50 dark:bg-dark-800 rounded-xl border border-gray-200 dark:border-dark-700 hover:shadow-sm transition-all">
-                <span className="text-gray-600 dark:text-gray-400 flex items-center gap-2">
-                  <Award className="w-4 h-4" />
-                  Highest Rating
-                </span>
-                <span className="font-bold text-yellow-600 dark:text-yellow-400 text-lg">{profile.highestRating}</span>
+              <div className="flex justify-between items-center py-3 border-b border-gray-100 dark:border-dark-800">
+                <span className="text-sm text-gray-600 dark:text-gray-400">Highest Rating</span>
+                <span className="font-semibold text-gray-900 dark:text-white">{profile.highestRating}</span>
               </div>
-              <div className="flex justify-between items-center p-4 bg-gray-50 dark:bg-dark-800 rounded-xl border border-gray-200 dark:border-dark-700 hover:shadow-sm transition-all">
-                <span className="text-gray-600 dark:text-gray-400 flex items-center gap-2">
-                  <TrendingUp className="w-4 h-4" />
-                  Lowest Rating
-                </span>
-                <span className="font-bold text-gray-600 dark:text-gray-400 text-lg">{profile.lowestRating}</span>
+              <div className="flex justify-between items-center py-3">
+                <span className="text-sm text-gray-600 dark:text-gray-400">Lowest Rating</span>
+                <span className="font-semibold text-gray-900 dark:text-white">{profile.lowestRating}</span>
               </div>
             </div>
           </div>
 
-          <div className="bg-white dark:bg-dark-900 border border-gray-200 dark:border-dark-800 rounded-2xl p-6 shadow-sm">
-            <h3 className="text-xl font-bold mb-6 flex items-center gap-3 text-gray-900 dark:text-white">
-              <div className="p-2 bg-gray-900 dark:bg-white rounded-lg">
-                <TrendingUp className="w-5 h-5 text-white dark:text-gray-900" />
+          <div className="bg-white dark:bg-dark-900 border border-gray-200 dark:border-dark-800 rounded-lg p-6">
+            <h3 className="text-base font-semibold mb-4 flex items-center gap-2 text-gray-900 dark:text-white">
+              <TrendingUp className="w-4 h-4" />
               </div>
               Statistics
             </h3>
             <div className="space-y-3">
-              <div className="flex justify-between items-center p-4 bg-gray-50 dark:bg-dark-800 rounded-xl border border-gray-200 dark:border-dark-700 hover:shadow-sm transition-all">
-                <span className="text-gray-600 dark:text-gray-400">Wins</span>
-                <span className="font-bold text-green-600 dark:text-green-400 text-lg">{profile.wins}</span>
+              <div className="flex justify-between items-center py-3 border-b border-gray-100 dark:border-dark-800">
+                <span className="text-sm text-gray-600 dark:text-gray-400">Wins</span>
+                <span className="font-semibold text-gray-900 dark:text-white">{profile.wins}</span>
               </div>
-              <div className="flex justify-between items-center p-4 bg-gray-50 dark:bg-dark-800 rounded-xl border border-gray-200 dark:border-dark-700 hover:shadow-sm transition-all">
-                <span className="text-gray-600 dark:text-gray-400">Losses</span>
-                <span className="font-bold text-red-600 dark:text-red-400 text-lg">{profile.losses}</span>
+              <div className="flex justify-between items-center py-3 border-b border-gray-100 dark:border-dark-800">
+                <span className="text-sm text-gray-600 dark:text-gray-400">Losses</span>
+                <span className="font-semibold text-gray-900 dark:text-white">{profile.losses}</span>
               </div>
-              <div className="flex justify-between items-center p-4 bg-gray-50 dark:bg-dark-800 rounded-xl border border-gray-200 dark:border-dark-700 hover:shadow-sm transition-all">
-                <span className="text-gray-600 dark:text-gray-400">Draws</span>
-                <span className="font-bold text-gray-600 dark:text-gray-400 text-lg">{profile.draws}</span>
+              <div className="flex justify-between items-center py-3 border-b border-gray-100 dark:border-dark-800">
+                <span className="text-sm text-gray-600 dark:text-gray-400">Draws</span>
+                <span className="font-semibold text-gray-900 dark:text-white">{profile.draws}</span>
               </div>
-              <div className="flex justify-between items-center p-4 bg-gray-50 dark:bg-dark-800 rounded-xl border border-gray-200 dark:border-dark-700 hover:shadow-sm transition-all">
-                <span className="text-gray-600 dark:text-gray-400">Current Rating</span>
-                <span className="font-bold text-gray-900 dark:text-white text-lg">{profile.rating}</span>
+              <div className="flex justify-between items-center py-3">
+                <span className="text-sm text-gray-600 dark:text-gray-400">Current Rating</span>
+                <span className="font-semibold text-gray-900 dark:text-white">{profile.rating}</span>
               </div>
             </div>
           </div>
@@ -383,46 +348,37 @@ export default function Profile() {
 
         {/* Action Buttons */}
         {isOwnProfile ? (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="flex flex-col gap-3">
             <button
               onClick={() => navigate('/leaderboard')}
-              className="btn-primary flex items-center justify-center gap-2 px-6 py-4 rounded-xl hover:scale-105 font-semibold"
+              className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gray-900 dark:bg-white hover:bg-gray-800 dark:hover:bg-gray-100 text-white dark:text-gray-900 rounded-lg transition font-medium text-sm"
             >
-              <Trophy className="w-5 h-5" />
+              <Trophy className="w-4 h-4" />
               View Leaderboard
             </button>
             <button
               onClick={() => setShowPasswordModal(true)}
-              className="btn-secondary flex items-center justify-center gap-2 px-6 py-4 rounded-xl hover:scale-105 font-semibold"
+              className="w-full flex items-center justify-center gap-2 px-4 py-3 border border-gray-300 dark:border-dark-700 hover:bg-gray-50 dark:hover:bg-dark-800 text-gray-700 dark:text-gray-300 rounded-lg transition font-medium text-sm"
             >
-              <Lock className="w-5 h-5" />
+              <Lock className="w-4 h-4" />
               Change Password
             </button>
             <button
               onClick={() => setShowDeleteModal(true)}
-              className="flex items-center justify-center gap-2 px-6 py-4 bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/30 border border-red-300 dark:border-red-500/50 hover:border-red-500 dark:hover:border-red-500 rounded-xl transition-all hover:scale-105 font-semibold text-red-700 dark:text-red-400"
+              className="w-full flex items-center justify-center gap-2 px-4 py-3 border border-gray-300 dark:border-dark-700 hover:bg-gray-50 dark:hover:bg-dark-800 text-gray-700 dark:text-gray-300 rounded-lg transition font-medium text-sm"
             >
-              <Trash2 className="w-5 h-5" />
+              <Trash2 className="w-4 h-4" />
               Delete Account
             </button>
           </div>
         ) : (
-          <div className="flex gap-4">
-            <button
-              onClick={() => navigate('/dashboard')}
-              className="flex-1 flex items-center justify-center gap-2 px-6 py-4 bg-slate-700 hover:bg-slate-600 rounded-xl transition-all border border-slate-600 hover:scale-105 font-semibold"
-            >
-              <ArrowLeft className="w-5 h-5" />
-              Back to Dashboard
-            </button>
-            <button
-              onClick={() => navigate('/leaderboard')}
-              className="flex-1 flex items-center justify-center gap-2 px-6 py-4 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 rounded-xl transition-all shadow-lg shadow-indigo-500/30 hover:scale-105 font-semibold"
-            >
-              <Trophy className="w-5 h-5" />
-              View Leaderboard
-            </button>
-          </div>
+          <button
+            onClick={() => navigate('/leaderboard')}
+            className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gray-900 dark:bg-white hover:bg-gray-800 dark:hover:bg-gray-100 text-white dark:text-gray-900 rounded-lg transition font-medium text-sm"
+          >
+            <Trophy className="w-4 h-4" />
+            View Leaderboard
+          </button>
         )}
       </main>
 
