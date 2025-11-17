@@ -139,32 +139,38 @@ export default function Profile() {
   const winRate = profile.totalMatches > 0 ? ((profile.wins / profile.totalMatches) * 100).toFixed(1) : 0;
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-dark-950">
-      {/* Header */}
-      <header className="bg-white dark:bg-dark-900 border-b border-gray-200 dark:border-dark-800 sticky top-0 z-50 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => navigate('/dashboard')}
-              className="p-2 hover:bg-gray-100 dark:hover:bg-dark-800 rounded-lg transition"
-            >
-              <ArrowLeft className="w-5 h-5 text-gray-700 dark:text-gray-300" />
-            </button>
-            <div className="flex items-center gap-2">
-              <div className="p-1.5 bg-gray-900 dark:bg-white rounded-lg">
-                <User className="w-5 h-5 text-white dark:text-gray-900" />
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-dark-950 dark:via-dark-900 dark:to-dark-950">
+      {/* Hero Header */}
+      <section className="relative w-full h-56 md:h-64 bg-gradient-to-r from-blue-600 via-purple-600 to-pink-500 flex items-end">
+        <div className="absolute left-0 top-0 w-full h-full opacity-30 bg-[url('https://www.transparenttextures.com/patterns/diamond-upholstery.png')]" />
+        <div className="max-w-6xl mx-auto w-full flex items-end px-6 pb-6 z-10 relative">
+          <div className="flex items-end gap-6">
+            <div className="w-32 h-32 md:w-40 md:h-40 rounded-3xl bg-white/80 dark:bg-dark-900/80 shadow-lg flex items-center justify-center text-6xl font-extrabold text-blue-700 dark:text-blue-300 border-4 border-white dark:border-dark-900">
+              {profile.username.charAt(0).toUpperCase()}
+            </div>
+            <div className="flex flex-col gap-2">
+              <div className="flex items-center gap-3">
+                <h1 className="text-3xl md:text-4xl font-extrabold text-white drop-shadow-lg">{profile.username}</h1>
+                {profile.isOnline && (
+                  <span className="px-3 py-1 bg-green-500/90 rounded-full text-xs font-semibold text-white shadow">Online</span>
+                )}
               </div>
-              <h1 className="text-xl font-semibold text-gray-900 dark:text-white">
-                Player Profile
-              </h1>
+              <div className="flex items-center gap-2 mt-1">
+                <span className="bg-white/80 dark:bg-dark-800/80 px-3 py-1 rounded-full text-sm font-medium text-blue-700 dark:text-blue-300 shadow">Rating: {profile.rating}</span>
+                <span className="bg-white/80 dark:bg-dark-800/80 px-3 py-1 rounded-full text-sm font-medium text-purple-700 dark:text-purple-300 shadow">Wins: {profile.wins}</span>
+                <span className="bg-white/80 dark:bg-dark-800/80 px-3 py-1 rounded-full text-sm font-medium text-pink-700 dark:text-pink-300 shadow">Losses: {profile.losses}</span>
+              </div>
+              {profile.bio && (
+                <p className="mt-2 text-white/90 text-base italic max-w-xl drop-shadow">{profile.bio}</p>
+              )}
             </div>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="ml-auto flex items-center gap-3">
             <ThemeToggle />
             {isOwnProfile && !isEditing && (
               <button
                 onClick={() => setIsEditing(true)}
-                className="flex items-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white hover:bg-gray-800 dark:hover:bg-gray-100 text-white dark:text-gray-900 rounded-lg transition font-medium text-sm"
+                className="flex items-center gap-2 px-4 py-2 bg-white/90 hover:bg-blue-100 dark:bg-dark-800/90 dark:hover:bg-dark-700 text-blue-700 dark:text-white rounded-lg transition font-medium text-sm shadow"
               >
                 <Edit2 className="w-4 h-4" />
                 <span className="hidden md:inline">Edit Profile</span>
@@ -172,12 +178,12 @@ export default function Profile() {
             )}
           </div>
         </div>
-      </header>
+      </section>
 
       {/* Main Content */}
       <main className="max-w-6xl mx-auto px-6 py-12 relative z-10">
-        {/* Profile Header */}
-        <div className="bg-white dark:bg-dark-900 border border-gray-200 dark:border-dark-800 rounded-2xl p-8 mb-8 shadow-sm">
+        {/* Profile Card */}
+        <div className="bg-white/90 dark:bg-dark-900/90 border border-gray-200 dark:border-dark-800 rounded-2xl p-8 mb-8 shadow-lg -mt-24 relative z-20">
           {isEditing ? (
             <div className="space-y-6">
               <div className="flex items-center justify-between mb-6">
