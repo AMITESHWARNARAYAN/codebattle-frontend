@@ -1,12 +1,74 @@
 import { useNavigate } from 'react-router-dom';
-import { Code2, Zap, Trophy, Users, ArrowRight, Moon, Sun, Terminal, Clock, TrendingUp, Play, Github, Linkedin, ChevronRight, BookOpen, Sparkles } from 'lucide-react';
+import { Code2, Zap, Trophy, Users, ArrowRight, Moon, Sun, Terminal, Clock, TrendingUp, Play, Github, Linkedin, ChevronRight, BookOpen, Sparkles, Loader2 } from 'lucide-react';
 import { useThemeStore } from '../store/themeStore';
 import { useState } from 'react';
+import { toast } from 'react-hot-toast';
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 export default function Landing() {
   const navigate = useNavigate();
   const { isDark, toggleTheme } = useThemeStore();
   const [hoveredCard, setHoveredCard] = useState(null);
+  const [isRunning, setIsRunning] = useState(false);
+  const [output, setOutput] = useState(null);
+  const [code, setCode] = useState(`// Two Sum Problem
+function twoSum(nums, target) {
+  const map = new Map();
+  
+  for (let i = 0; i < nums.length; i++) {
+    const complement = target - nums[i];
+    
+    if (map.has(complement)) {
+      return [map.get(complement), i];
+    }
+    
+    map.set(nums[i], i);
+  }
+  
+  return [];
+}
+
+// Test case
+console.log(twoSum([2,7,11,15], 9));
+// Output: [0, 1]`);
+
+  const handleRunCode = async () => {
+    setIsRunning(true);
+    setOutput(null);
+    
+    try {
+      const response = await fetch(`${API_URL}/judge/run-public`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          code,
+          language: 'javascript',
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to run code');
+      }
+
+      const result = await response.json();
+      setOutput(result);
+      
+      if (result.error) {
+        toast.error('Code execution failed');
+      } else {
+        toast.success('Code executed successfully!');
+      }
+    } catch (error) {
+      console.error('Run code error:', error);
+      toast.error('Failed to run code');
+      setOutput({ error: error.message || 'Failed to execute code' });
+    } finally {
+      setIsRunning(false);
+    }
+  };
 
   // TensorFlow-inspired color scheme
   const bgColor = isDark ? 'bg-[#0a0a0a]' : 'bg-white';
@@ -108,33 +170,50 @@ export default function Landing() {
               <div className={`flex items-center gap-2 mb-4 pb-4 border-b ${borderColor}`}>
                 <Terminal className="w-5 h-5 text-orange-500" />
                 <span className={`text-sm font-medium ${textColor}`}>Quick Start</span>
-                <button className="ml-auto text-sm text-orange-500 hover:text-orange-600 inline-flex items-center gap-1">
-                  <Play className="w-4 h-4" />
-                  Run code
+                <button 
+                  onClick={handleRunCode}
+                  disabled={isRunning}
+                  className="ml-auto text-sm text-orange-500 hover:text-orange-600 disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-1 transition-colors"
+                >
+                  {isRunning ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Running...
+                    </>
+                  ) : (
+                    <>
+                      <Play className="w-4 h-4" />
+                      Run code
+                    </>
+                  )}
                 </button>
               </div>
-              <pre className={`text-sm ${textMuted} overflow-x-auto`}>
-                <code>{`// Two Sum Problem
-function twoSum(nums, target) {
-  const map = new Map();
-  
-  for (let i = 0; i < nums.length; i++) {
-    const complement = target - nums[i];
-    
-    if (map.has(complement)) {
-      return [map.get(complement), i];
-    }
-    
-    map.set(nums[i], i);
-  }
-  
-  return [];
-}
-
-// Test case
-console.log(twoSum([2,7,11,15], 9));
-// Output: [0, 1]`}</code>
-              </pre>
+              <textarea
+                value={code}
+                onChange={(e) => setCode(e.target.value)}
+                className={`w-full text-sm ${textMuted} font-mono bg-transparent border-none outline-none resize-none overflow-x-auto`}
+                rows={18}
+                spellCheck={false}
+              />
+              
+              {/* Output Section */}
+              {output && (
+                <div className={`mt-4 pt-4 border-t ${borderColor}`}>
+                  <div className="flex items-center gap-2 mb-2">
+                    <Terminal className="w-4 h-4 text-orange-500" />
+                    <span className={`text-xs font-medium ${textColor}`}>Output</span>
+                  </div>
+                  {output.error ? (
+                    <div className={`text-sm p-3 rounded-lg ${isDark ? 'bg-red-900/20 text-red-400' : 'bg-red-50 text-red-600'}`}>
+                      <pre className="whitespace-pre-wrap font-mono">{output.error}</pre>
+                    </div>
+                  ) : (
+                    <div className={`text-sm p-3 rounded-lg ${isDark ? 'bg-green-900/20 text-green-400' : 'bg-green-50 text-green-600'}`}>
+                      <pre className="whitespace-pre-wrap font-mono">{output.output || output.stdout || 'Success'}</pre>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </div>
