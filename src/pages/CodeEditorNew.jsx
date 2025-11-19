@@ -9,7 +9,8 @@ import {
   Clock, CheckCircle2, XCircle, Loader2, Code2, FileText, 
   MessageSquare, BarChart3, Lightbulb, BookOpen, ThumbsUp, ThumbsDown,
   Share2, Star, Eye, EyeOff, RotateCcw, Maximize2, Minimize2, Shuffle,
-  ExternalLink, Menu, Users, Bookmark, Info, ListOrdered
+  ExternalLink, Menu, Users, Bookmark, Info, ListOrdered, Plus, Trash2,
+  AlignLeft, Keyboard, Copy
 } from 'lucide-react';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
@@ -44,6 +45,12 @@ export default function CodeEditorNew() {
   const [testResults, setTestResults] = useState(null);
   const [customInput, setCustomInput] = useState('');
   const [selectedTestCase, setSelectedTestCase] = useState(0);
+  
+  // Custom test cases
+  const [customTestCases, setCustomTestCases] = useState([]);
+  const [showAddTestCase, setShowAddTestCase] = useState(false);
+  const [newTestCase, setNewTestCase] = useState({ input: '', expectedOutput: '' });
+  const [showKeyboardShortcuts, setShowKeyboardShortcuts] = useState(false);
   
   // Problem metadata
   const [liked, setLiked] = useState(false);
@@ -346,6 +353,130 @@ export default function CodeEditorNew() {
       setCode(problem?.functionSignature?.[language] || '');
     }
   };
+
+  // Format code
+  const handleFormatCode = () => {
+    if (editorRef.current) {
+      editorRef.current.getAction('editor.action.formatDocument').run();
+      toast.success('Code formatted!');
+    }
+  };
+
+  // Copy code to clipboard
+  const handleCopyCode = async () => {
+    try {
+      await navigator.clipboard.writeText(code);
+      toast.success('Code copied to clipboard!');
+    } catch (error) {
+      toast.error('Failed to copy code');
+    }
+  };
+
+  // Add custom test case
+  const handleAddTestCase = () => {
+    if (!newTestCase.input.trim()) {
+      toast.error('Input cannot be empty');
+      return;
+    }
+    
+    const testCase = {
+      id: Date.now(),
+      input: newTestCase.input,
+      expectedOutput: newTestCase.expectedOutput,
+      isCustom: true
+    };
+    
+    setCustomTestCases([...customTestCases, testCase]);
+    setNewTestCase({ input: '', expectedOutput: '' });
+    setShowAddTestCase(false);
+    toast.success('Test case added!');
+  };
+
+  // Delete custom test case
+  const handleDeleteTestCase = (testCaseId) => {
+    setCustomTestCases(customTestCases.filter(tc => tc.id !== testCaseId));
+    toast.success('Test case deleted');
+  };
+
+  // Run custom test case
+  const handleRunCustomTestCase = async (testCase) => {
+    if (!code.trim()) {
+      toast.error('Please write some code first');
+      return;
+    }
+
+    setRunning(true);
+    setConsoleTab('result');
+    
+    try {
+      const response = await fetch(`${API_URL}/judge/run`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          code,
+          language,
+          input: testCase.input
+        })
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to run code');
+      }
+
+      const result = await response.json();
+      setTestResults({
+        ...result,
+        status: result.status || 'Accepted',
+        isCustomTest: true,
+        expectedOutput: testCase.expectedOutput
+      });
+
+      if (result.error) {
+        toast.error('❌ Runtime Error');
+      } else {
+        toast.success('✅ Test case executed!');
+      }
+    } catch (error) {
+      toast.error(`Error: ${error.message || 'Failed to run code'}`);
+      console.error('Run code error:', error);
+    } finally {
+      setRunning(false);
+    }
+  };
+
+  // Keyboard shortcuts handler
+  useEffect(() => {
+    const handleKeyPress = (e) => {
+      // Ctrl/Cmd + Enter to run code
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+        e.preventDefault();
+        handleRunCode();
+      }
+      // Ctrl/Cmd + S to save (already auto-saving, just show feedback)
+      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+        e.preventDefault();
+        setLastSaved('Saved just now');
+        toast.success('Code saved!');
+      }
+      // Ctrl/Cmd + Shift + F to format
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'F') {
+        e.preventDefault();
+        handleFormatCode();
+      }
+      // Ctrl/Cmd + / to toggle shortcuts modal
+      if ((e.ctrlKey || e.metaKey) && e.key === '/') {
+        e.preventDefault();
+        setShowKeyboardShortcuts(!showKeyboardShortcuts);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyPress);
+    return () => window.removeEventListener('keydown', handleKeyPress);
+  }, [code, showKeyboardShortcuts]);
 
   const getDifficultyColor = (difficulty) => {
     switch (difficulty) {
@@ -987,6 +1118,33 @@ export default function CodeEditorNew() {
             </div>
 
             <div className="flex items-center gap-2">
+              {/* Format Code */}
+              <button 
+                onClick={handleFormatCode}
+                className={`${hoverBg} p-1 rounded transition`} 
+                title="Format Code (Ctrl+Shift+F)"
+              >
+                <AlignLeft className="w-3.5 h-3.5" />
+              </button>
+              
+              {/* Copy Code */}
+              <button 
+                onClick={handleCopyCode}
+                className={`${hoverBg} p-1 rounded transition`} 
+                title="Copy Code"
+              >
+                <Copy className="w-3.5 h-3.5" />
+              </button>
+              
+              {/* Keyboard Shortcuts */}
+              <button 
+                onClick={() => setShowKeyboardShortcuts(true)}
+                className={`${hoverBg} p-1 rounded transition`} 
+                title="Keyboard Shortcuts (Ctrl+/)"
+              >
+                <Keyboard className="w-3.5 h-3.5" />
+              </button>
+              
               {/* Icons */}
               <button className={`${hoverBg} p-1 rounded transition`} title="Settings">
                 <Settings className="w-3.5 h-3.5" />
@@ -1119,8 +1277,8 @@ export default function CodeEditorNew() {
                 <div className="flex-1 overflow-y-auto p-4">
                   {consoleTab === 'testcase' && (
                     <div className="space-y-3">
-                      {/* Test Case Selector */}
-                      <div className="flex gap-2">
+                      {/* Test Case Selector with Custom Test Cases */}
+                      <div className="flex gap-2 flex-wrap items-center">
                         {problem?.testCases?.slice(0, 3).map((tc, idx) => (
                           <button
                             key={idx}
@@ -1134,12 +1292,40 @@ export default function CodeEditorNew() {
                             Case {idx + 1}
                           </button>
                         ))}
+                        
+                        {/* Custom Test Cases */}
+                        {customTestCases.map((tc, idx) => (
+                          <div key={tc.id} className="flex items-center gap-1">
+                            <button
+                              onClick={() => handleRunCustomTestCase(tc)}
+                              className={`px-3 py-1.5 text-sm rounded transition ${bgSecondary} ${mutedText} ${hoverBg} flex items-center gap-1`}
+                            >
+                              Custom {idx + 1}
+                            </button>
+                            <button
+                              onClick={() => handleDeleteTestCase(tc.id)}
+                              className={`p-1 rounded transition ${hoverBg} text-red-500`}
+                              title="Delete test case"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </button>
+                          </div>
+                        ))}
+                        
+                        {/* Add Test Case Button */}
+                        <button
+                          onClick={() => setShowAddTestCase(true)}
+                          className={`px-3 py-1.5 text-sm rounded transition ${bgSecondary} ${mutedText} ${hoverBg} flex items-center gap-1`}
+                        >
+                          <Plus className="w-3 h-3" />
+                          Add Test
+                        </button>
                       </div>
 
                       {/* Test Case Input */}
                       <div>
                         <label className="text-sm font-medium mb-1 block">Input:</label>
-                        <div className={`${bgSecondary} rounded p-3 font-mono text-sm whitespace-pre-wrap`}>
+                        <div className={`${bgSecondary} rounded p-3 font-mono text-sm whitespace-pre-wrap overflow-x-auto`}>
                           {problem?.testCases?.[selectedTestCase]?.input || 'No input'}
                         </div>
                       </div>
@@ -1148,7 +1334,7 @@ export default function CodeEditorNew() {
                       {problem?.testCases?.[selectedTestCase]?.expectedOutput && (
                         <div>
                           <label className="text-sm font-medium mb-1 block">Expected Output:</label>
-                          <div className={`${bgSecondary} rounded p-3 font-mono text-sm whitespace-pre-wrap`}>
+                          <div className={`${bgSecondary} rounded p-3 font-mono text-sm whitespace-pre-wrap overflow-x-auto`}>
                             {problem.testCases[selectedTestCase].expectedOutput}
                           </div>
                         </div>
@@ -1206,21 +1392,31 @@ export default function CodeEditorNew() {
                             </div>
                           )}
 
-                          {/* Output */}
+                          {/* Output with better formatting */}
                           {testResults.output && (
                             <div>
                               <label className="text-sm font-medium mb-1 block">Your Output:</label>
-                              <div className={`${bgSecondary} rounded p-3 font-mono text-sm`}>
+                              <div className={`${bgSecondary} rounded p-3 font-mono text-sm whitespace-pre-wrap overflow-x-auto`}>
                                 {testResults.output}
                               </div>
                             </div>
                           )}
 
-                          {/* Error */}
+                          {/* Expected Output for custom tests */}
+                          {testResults.isCustomTest && testResults.expectedOutput && (
+                            <div>
+                              <label className="text-sm font-medium mb-1 block">Expected Output:</label>
+                              <div className={`${bgSecondary} rounded p-3 font-mono text-sm whitespace-pre-wrap overflow-x-auto`}>
+                                {testResults.expectedOutput}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Error with better formatting */}
                           {testResults.error && (
                             <div>
                               <label className="text-sm font-medium mb-1 block text-red-500">Error:</label>
-                              <div className="bg-red-900/20 border border-red-500/30 rounded p-3 font-mono text-sm text-red-400">
+                              <div className="bg-red-900/20 border border-red-500/30 rounded p-3 font-mono text-sm text-red-400 whitespace-pre-wrap overflow-x-auto">
                                 {testResults.error}
                               </div>
                             </div>
@@ -1296,6 +1492,143 @@ export default function CodeEditorNew() {
           </div>
         </div>
       </div>
+
+      {/* Add Test Case Modal */}
+      {showAddTestCase && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className={`${bgColor} border ${borderColor} rounded-xl p-6 max-w-2xl w-full shadow-2xl`}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className={`text-lg font-semibold ${textColor}`}>Add Custom Test Case</h3>
+              <button
+                onClick={() => setShowAddTestCase(false)}
+                className={`${hoverBg} p-2 rounded transition`}
+              >
+                <XCircle className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className={`block text-sm font-medium mb-2 ${textColor}`}>
+                  Input
+                </label>
+                <textarea
+                  value={newTestCase.input}
+                  onChange={(e) => setNewTestCase({ ...newTestCase, input: e.target.value })}
+                  className={`w-full px-3 py-2 ${bgSecondary} border ${borderColor} rounded font-mono text-sm resize-none ${textColor}`}
+                  rows={4}
+                  placeholder="Enter test input..."
+                />
+              </div>
+
+              <div>
+                <label className={`block text-sm font-medium mb-2 ${textColor}`}>
+                  Expected Output (Optional)
+                </label>
+                <textarea
+                  value={newTestCase.expectedOutput}
+                  onChange={(e) => setNewTestCase({ ...newTestCase, expectedOutput: e.target.value })}
+                  className={`w-full px-3 py-2 ${bgSecondary} border ${borderColor} rounded font-mono text-sm resize-none ${textColor}`}
+                  rows={4}
+                  placeholder="Enter expected output (optional)..."
+                />
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowAddTestCase(false)}
+                  className={`flex-1 px-4 py-2 border ${borderColor} rounded ${hoverBg} transition`}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleAddTestCase}
+                  className="flex-1 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded transition"
+                >
+                  Add Test Case
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Keyboard Shortcuts Modal */}
+      {showKeyboardShortcuts && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className={`${bgColor} border ${borderColor} rounded-xl p-6 max-w-2xl w-full shadow-2xl`}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className={`text-lg font-semibold ${textColor} flex items-center gap-2`}>
+                <Keyboard className="w-5 h-5" />
+                Keyboard Shortcuts
+              </h3>
+              <button
+                onClick={() => setShowKeyboardShortcuts(false)}
+                className={`${hoverBg} p-2 rounded transition`}
+              >
+                <XCircle className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              <div className="grid grid-cols-2 gap-2 text-sm">
+                <div className={`flex items-center justify-between p-3 ${bgSecondary} rounded`}>
+                  <span className={mutedText}>Run Code</span>
+                  <kbd className={`px-2 py-1 ${bgColor} border ${borderColor} rounded text-xs font-mono`}>
+                    Ctrl+Enter
+                  </kbd>
+                </div>
+                <div className={`flex items-center justify-between p-3 ${bgSecondary} rounded`}>
+                  <span className={mutedText}>Format Code</span>
+                  <kbd className={`px-2 py-1 ${bgColor} border ${borderColor} rounded text-xs font-mono`}>
+                    Ctrl+Shift+F
+                  </kbd>
+                </div>
+                <div className={`flex items-center justify-between p-3 ${bgSecondary} rounded`}>
+                  <span className={mutedText}>Save Code</span>
+                  <kbd className={`px-2 py-1 ${bgColor} border ${borderColor} rounded text-xs font-mono`}>
+                    Ctrl+S
+                  </kbd>
+                </div>
+                <div className={`flex items-center justify-between p-3 ${bgSecondary} rounded`}>
+                  <span className={mutedText}>Toggle Shortcuts</span>
+                  <kbd className={`px-2 py-1 ${bgColor} border ${borderColor} rounded text-xs font-mono`}>
+                    Ctrl+/
+                  </kbd>
+                </div>
+                <div className={`flex items-center justify-between p-3 ${bgSecondary} rounded`}>
+                  <span className={mutedText}>Find</span>
+                  <kbd className={`px-2 py-1 ${bgColor} border ${borderColor} rounded text-xs font-mono`}>
+                    Ctrl+F
+                  </kbd>
+                </div>
+                <div className={`flex items-center justify-between p-3 ${bgSecondary} rounded`}>
+                  <span className={mutedText}>Replace</span>
+                  <kbd className={`px-2 py-1 ${bgColor} border ${borderColor} rounded text-xs font-mono`}>
+                    Ctrl+H
+                  </kbd>
+                </div>
+                <div className={`flex items-center justify-between p-3 ${bgSecondary} rounded`}>
+                  <span className={mutedText}>Comment Line</span>
+                  <kbd className={`px-2 py-1 ${bgColor} border ${borderColor} rounded text-xs font-mono`}>
+                    Ctrl+/
+                  </kbd>
+                </div>
+                <div className={`flex items-center justify-between p-3 ${bgSecondary} rounded`}>
+                  <span className={mutedText}>Undo</span>
+                  <kbd className={`px-2 py-1 ${bgColor} border ${borderColor} rounded text-xs font-mono`}>
+                    Ctrl+Z
+                  </kbd>
+                </div>
+              </div>
+
+              <div className={`mt-4 p-3 ${bgSecondary} rounded text-xs ${mutedText}`}>
+                💡 Tip: Use <kbd className="px-1 py-0.5 bg-gray-700 rounded">Ctrl</kbd> (or <kbd className="px-1 py-0.5 bg-gray-700 rounded">Cmd</kbd> on Mac) for all shortcuts
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
