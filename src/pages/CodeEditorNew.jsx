@@ -4,9 +4,9 @@ import { useAuthStore } from '../store/authStore';
 import { useThemeStore } from '../store/themeStore';
 import Editor from '@monaco-editor/react';
 import { toast } from 'react-hot-toast';
-import { 
-  Play, Send, ChevronLeft, ChevronRight, ChevronDown, Settings, 
-  Clock, CheckCircle2, XCircle, Loader2, Code2, FileText, 
+import {
+  Play, Send, ChevronLeft, ChevronRight, ChevronDown, Settings,
+  Clock, CheckCircle2, XCircle, Loader2, Code2, FileText,
   MessageSquare, BarChart3, Lightbulb, BookOpen, ThumbsUp, ThumbsDown,
   Share2, Star, Eye, EyeOff, RotateCcw, Maximize2, Minimize2, Shuffle,
   ExternalLink, Menu, Users, Bookmark, Info, ListOrdered, Plus, Trash2,
@@ -30,7 +30,7 @@ export default function CodeEditorNew() {
   const [code, setCode] = useState('');
   const [language, setLanguage] = useState('cpp');
   const [fontSize, setFontSize] = useState(14);
-  
+
   // UI state
   const [activeTab, setActiveTab] = useState('description'); // description, editorial, solutions, submissions
   const [leftPanelTab, setLeftPanelTab] = useState('description');
@@ -38,20 +38,20 @@ export default function CodeEditorNew() {
   const [showConsole, setShowConsole] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
-  
+
   // Test execution
   const [running, setRunning] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [testResults, setTestResults] = useState(null);
   const [customInput, setCustomInput] = useState('');
   const [selectedTestCase, setSelectedTestCase] = useState(0);
-  
+
   // Custom test cases
   const [customTestCases, setCustomTestCases] = useState([]);
   const [showAddTestCase, setShowAddTestCase] = useState(false);
   const [newTestCase, setNewTestCase] = useState({ input: '', expectedOutput: '' });
   const [showKeyboardShortcuts, setShowKeyboardShortcuts] = useState(false);
-  
+
   // Problem metadata
   const [liked, setLiked] = useState(false);
   const [disliked, setDisliked] = useState(false);
@@ -82,34 +82,93 @@ export default function CodeEditorNew() {
     }
   }, [problemId, token]);
 
-  // Load saved code or template when language changes
+  // Load saved draft or template
   useEffect(() => {
-    if (problemId && language && problem) {
-      const savedCode = localStorage.getItem(`code_${problemId}_${language}`);
-      if (savedCode) {
-        setCode(savedCode);
-      } else if (problem.functionSignature?.[language]) {
-        // Use template if no saved code
-        setCode(problem.functionSignature[language]);
-      } else {
-        setCode('');
+    const loadCode = async () => {
+      if (!problemId || !language || !token) return;
+
+      try {
+        const response = await fetch(`${API_URL}/drafts/${problemId}?language=${language}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          if (data && data.code) {
+            setCode(data.code);
+            setLastSaved('Saved');
+            return;
+          }
+        }
+
+        // Fallback to template if no draft
+        if (problem?.functionSignature?.[language]) {
+          setCode(problem.functionSignature[language]);
+        } else {
+          setCode('');
+        }
+      } catch (error) {
+        console.error('Failed to load draft:', error);
       }
+    };
+
+    loadCode();
+  }, [problemId, language, problem, token]);
+
+  // Save draft function
+  const saveDraft = async (currentCode) => {
+    if (!problemId || !language || !token) return;
+
+    try {
+      setLastSaved('Saving...');
+      const response = await fetch(`${API_URL}/drafts`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          problemId,
+          language,
+          code: currentCode
+        })
+      });
+
+      if (response.ok) {
+        setLastSaved('Saved');
+      } else {
+        setLastSaved('Failed to save');
+      }
+    } catch (error) {
+      console.error('Save draft error:', error);
+      setLastSaved('Failed to save');
     }
-  }, [problemId, language, problem]);
+  };
+
+  // Auto-save effect
+  useEffect(() => {
+    if (!autoSave || !code) return;
+
+    const timeoutId = setTimeout(() => {
+      saveDraft(code);
+    }, 2000); // Auto-save after 2 seconds of inactivity
+
+    return () => clearTimeout(timeoutId);
+  }, [code, autoSave, problemId, language]);
 
   const fetchProblem = async () => {
     try {
       const response = await fetch(`${API_URL}/problems/${problemId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      
+
       if (!response.ok) {
         throw new Error('Failed to fetch problem');
       }
-      
+
       const data = await response.json();
       setProblem(data);
-      
+
       // Process hints after problem is loaded
       if (data?.hints && data.hints.length > 0) {
         const formattedHints = data.hints.map((hint, idx) => ({
@@ -119,7 +178,7 @@ export default function CodeEditorNew() {
         }));
         setHints(formattedHints);
       }
-      
+
       // Fetch user preferences
       fetchUserPreferences();
     } catch (error) {
@@ -254,7 +313,7 @@ export default function CodeEditorNew() {
 
     setRunning(true);
     setConsoleTab('result');
-    
+
     try {
       const response = await fetch(`${API_URL}/judge/run`, {
         method: 'POST',
@@ -378,14 +437,14 @@ export default function CodeEditorNew() {
       toast.error('Input cannot be empty');
       return;
     }
-    
+
     const testCase = {
       id: Date.now(),
       input: newTestCase.input,
       expectedOutput: newTestCase.expectedOutput,
       isCustom: true
     };
-    
+
     setCustomTestCases([...customTestCases, testCase]);
     setNewTestCase({ input: '', expectedOutput: '' });
     setShowAddTestCase(false);
@@ -407,7 +466,7 @@ export default function CodeEditorNew() {
 
     setRunning(true);
     setConsoleTab('result');
-    
+
     try {
       const response = await fetch(`${API_URL}/judge/run`, {
         method: 'POST',
@@ -456,10 +515,10 @@ export default function CodeEditorNew() {
         e.preventDefault();
         handleRunCode();
       }
-      // Ctrl/Cmd + S to save (already auto-saving, just show feedback)
+      // Ctrl/Cmd + S to save
       if ((e.ctrlKey || e.metaKey) && e.key === 's') {
         e.preventDefault();
-        setLastSaved('Saved just now');
+        saveDraft(code);
         toast.success('Code saved!');
       }
       // Ctrl/Cmd + Shift + F to format
@@ -676,12 +735,12 @@ export default function CodeEditorNew() {
           <button className={`${hoverBg} p-1.5 rounded transition`}>
             <Users className="w-4 h-4" />
           </button>
-          
+
           <button className={`${hoverBg} p-1.5 rounded transition`}>
             <Settings className="w-4 h-4" />
           </button>
 
-          <button 
+          <button
             onClick={() => setIsFullscreen(!isFullscreen)}
             className={`${hoverBg} p-1.5 rounded transition`}
           >
@@ -706,7 +765,7 @@ export default function CodeEditorNew() {
       {/* Main Content */}
       <div className="flex-1 flex overflow-hidden">
         {/* Left Panel - Problem Description */}
-        <div 
+        <div
           className={`border-r ${borderColor} overflow-hidden flex flex-col`}
           style={{ width: `${leftWidth}%` }}
         >
@@ -728,11 +787,10 @@ export default function CodeEditorNew() {
                     if (tab.id === 'editorial' && !editorial) fetchEditorial();
                     if (tab.id === 'submissions' && submissions.length === 0) fetchSubmissions();
                   }}
-                  className={`px-4 py-2.5 text-sm font-medium border-b-2 transition flex items-center gap-2 ${
-                    leftPanelTab === tab.id
-                      ? 'border-blue-500 text-blue-500'
-                      : `border-transparent ${mutedText} ${hoverBg}`
-                  }`}
+                  className={`px-4 py-2.5 text-sm font-medium border-b-2 transition flex items-center gap-2 ${leftPanelTab === tab.id
+                    ? 'border-blue-500 text-blue-500'
+                    : `border-transparent ${mutedText} ${hoverBg}`
+                    }`}
                 >
                   <Icon className="w-4 h-4" />
                   {tab.label}
@@ -750,16 +808,15 @@ export default function CodeEditorNew() {
                   <h1 className={`text-xl font-semibold mb-3 ${textColor}`}>
                     {problem?.title}
                   </h1>
-                  
+
                   <div className="flex items-center gap-2 flex-wrap">
                     {/* Difficulty Badge */}
-                    <span className={`text-sm font-medium px-2.5 py-0.5 rounded-full ${
-                      problem?.difficulty === 'Easy' 
-                        ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' 
-                        : problem?.difficulty === 'Medium'
+                    <span className={`text-sm font-medium px-2.5 py-0.5 rounded-full ${problem?.difficulty === 'Easy'
+                      ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                      : problem?.difficulty === 'Medium'
                         ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
                         : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
-                    }`}>
+                      }`}>
                       {problem?.difficulty}
                     </span>
 
@@ -980,9 +1037,8 @@ export default function CodeEditorNew() {
               {/* Like */}
               <button
                 onClick={handleLike}
-                className={`flex items-center gap-1.5 ${hoverBg} px-2 py-1 rounded transition ${
-                  liked ? 'text-blue-500' : mutedText
-                }`}
+                className={`flex items-center gap-1.5 ${hoverBg} px-2 py-1 rounded transition ${liked ? 'text-blue-500' : mutedText
+                  }`}
               >
                 <ThumbsUp className="w-4 h-4" fill={liked ? 'currentColor' : 'none'} />
                 <span className="font-medium">{formatLikeCount(likeCount)}</span>
@@ -991,9 +1047,8 @@ export default function CodeEditorNew() {
               {/* Dislike */}
               <button
                 onClick={handleDislike}
-                className={`${hoverBg} p-1 rounded transition ${
-                  disliked ? 'text-red-500' : mutedText
-                }`}
+                className={`${hoverBg} p-1 rounded transition ${disliked ? 'text-red-500' : mutedText
+                  }`}
               >
                 <ThumbsDown className="w-4 h-4" fill={disliked ? 'currentColor' : 'none'} />
               </button>
@@ -1007,9 +1062,8 @@ export default function CodeEditorNew() {
               {/* Bookmark */}
               <button
                 onClick={handleBookmark}
-                className={`${hoverBg} p-1 rounded transition ${
-                  bookmarked ? 'text-yellow-500' : mutedText
-                }`}
+                className={`${hoverBg} p-1 rounded transition ${bookmarked ? 'text-yellow-500' : mutedText
+                  }`}
                 title="Bookmark this problem"
               >
                 <Star className="w-4 h-4" fill={bookmarked ? 'currentColor' : 'none'} />
@@ -1072,7 +1126,7 @@ export default function CodeEditorNew() {
                 <span className="text-sm font-medium">Code</span>
               </div>
             </div>
-            
+
             <div className="flex items-center gap-3">
               {/* Language Selector */}
               <select
@@ -1119,32 +1173,32 @@ export default function CodeEditorNew() {
 
             <div className="flex items-center gap-2">
               {/* Format Code */}
-              <button 
+              <button
                 onClick={handleFormatCode}
-                className={`${hoverBg} p-1 rounded transition`} 
+                className={`${hoverBg} p-1 rounded transition`}
                 title="Format Code (Ctrl+Shift+F)"
               >
                 <AlignLeft className="w-3.5 h-3.5" />
               </button>
-              
+
               {/* Copy Code */}
-              <button 
+              <button
                 onClick={handleCopyCode}
-                className={`${hoverBg} p-1 rounded transition`} 
+                className={`${hoverBg} p-1 rounded transition`}
                 title="Copy Code"
               >
                 <Copy className="w-3.5 h-3.5" />
               </button>
-              
+
               {/* Keyboard Shortcuts */}
-              <button 
+              <button
                 onClick={() => setShowKeyboardShortcuts(true)}
-                className={`${hoverBg} p-1 rounded transition`} 
+                className={`${hoverBg} p-1 rounded transition`}
                 title="Keyboard Shortcuts (Ctrl+/)"
               >
                 <Keyboard className="w-3.5 h-3.5" />
               </button>
-              
+
               {/* Icons */}
               <button className={`${hoverBg} p-1 rounded transition`} title="Settings">
                 <Settings className="w-3.5 h-3.5" />
@@ -1152,9 +1206,9 @@ export default function CodeEditorNew() {
               <button className={`${hoverBg} p-1 rounded transition`} title="Fullscreen">
                 <Maximize2 className="w-3.5 h-3.5" />
               </button>
-              <button 
+              <button
                 onClick={handleReset}
-                className={`${hoverBg} p-1 rounded transition`} 
+                className={`${hoverBg} p-1 rounded transition`}
                 title="Reset"
               >
                 <RotateCcw className="w-3.5 h-3.5" />
@@ -1245,21 +1299,19 @@ export default function CodeEditorNew() {
                   <div className="flex">
                     <button
                       onClick={() => setConsoleTab('testcase')}
-                      className={`px-4 py-2 text-sm font-medium transition ${
-                        consoleTab === 'testcase'
-                          ? `${textColor} border-b-2 border-blue-500`
-                          : mutedText
-                      }`}
+                      className={`px-4 py-2 text-sm font-medium transition ${consoleTab === 'testcase'
+                        ? `${textColor} border-b-2 border-blue-500`
+                        : mutedText
+                        }`}
                     >
                       Testcase
                     </button>
                     <button
                       onClick={() => setConsoleTab('result')}
-                      className={`px-4 py-2 text-sm font-medium transition ${
-                        consoleTab === 'result'
-                          ? `${textColor} border-b-2 border-blue-500`
-                          : mutedText
-                      }`}
+                      className={`px-4 py-2 text-sm font-medium transition ${consoleTab === 'result'
+                        ? `${textColor} border-b-2 border-blue-500`
+                        : mutedText
+                        }`}
                     >
                       Test Result
                     </button>
@@ -1283,16 +1335,15 @@ export default function CodeEditorNew() {
                           <button
                             key={idx}
                             onClick={() => setSelectedTestCase(idx)}
-                            className={`px-3 py-1.5 text-sm rounded transition ${
-                              selectedTestCase === idx
-                                ? 'bg-blue-500 text-white'
-                                : `${bgSecondary} ${mutedText} ${hoverBg}`
-                            }`}
+                            className={`px-3 py-1.5 text-sm rounded transition ${selectedTestCase === idx
+                              ? 'bg-blue-500 text-white'
+                              : `${bgSecondary} ${mutedText} ${hoverBg}`
+                              }`}
                           >
                             Case {idx + 1}
                           </button>
                         ))}
-                        
+
                         {/* Custom Test Cases */}
                         {customTestCases.map((tc, idx) => (
                           <div key={tc.id} className="flex items-center gap-1">
@@ -1311,7 +1362,7 @@ export default function CodeEditorNew() {
                             </button>
                           </div>
                         ))}
-                        
+
                         {/* Add Test Case Button */}
                         <button
                           onClick={() => setShowAddTestCase(true)}
@@ -1329,7 +1380,7 @@ export default function CodeEditorNew() {
                           {problem?.testCases?.[selectedTestCase]?.input || 'No input'}
                         </div>
                       </div>
-                      
+
                       {/* Expected Output */}
                       {problem?.testCases?.[selectedTestCase]?.expectedOutput && (
                         <div>
@@ -1362,23 +1413,17 @@ export default function CodeEditorNew() {
                           </div>
 
                           {/* Stats */}
-                          {testResults.executionTime && (
+                          {testResults.executionTime !== undefined && (
                             <div className="grid grid-cols-2 gap-4">
                               <div>
                                 <p className={`text-xs ${mutedText} mb-1`}>Runtime</p>
                                 <p className="text-sm font-semibold">{testResults.executionTime}ms</p>
-                                {testResults.status === 'Accepted' && (
-                                  <p className="text-xs text-green-500">Beats 85.2%</p>
-                                )}
                               </div>
                               <div>
                                 <p className={`text-xs ${mutedText} mb-1`}>Memory</p>
                                 <p className="text-sm font-semibold">
                                   {testResults.memoryUsed ? `${testResults.memoryUsed.toFixed(2)}MB` : 'N/A'}
                                 </p>
-                                {testResults.status === 'Accepted' && (
-                                  <p className="text-xs text-green-500">Beats 72.4%</p>
-                                )}
                               </div>
                             </div>
                           )}
@@ -1392,17 +1437,27 @@ export default function CodeEditorNew() {
                             </div>
                           )}
 
-                          {/* Output with better formatting */}
+                          {/* Standard Output (Logs) */}
+                          {testResults.stdout && (
+                            <div>
+                              <label className="text-sm font-medium mb-1 block">Stdout:</label>
+                              <div className={`${bgSecondary} rounded p-3 font-mono text-sm whitespace-pre-wrap overflow-x-auto`}>
+                                {testResults.stdout}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Output */}
                           {testResults.output && (
                             <div>
-                              <label className="text-sm font-medium mb-1 block">Your Output:</label>
+                              <label className="text-sm font-medium mb-1 block">Output:</label>
                               <div className={`${bgSecondary} rounded p-3 font-mono text-sm whitespace-pre-wrap overflow-x-auto`}>
                                 {testResults.output}
                               </div>
                             </div>
                           )}
 
-                          {/* Expected Output for custom tests */}
+                          {/* Expected Output */}
                           {testResults.isCustomTest && testResults.expectedOutput && (
                             <div>
                               <label className="text-sm font-medium mb-1 block">Expected Output:</label>
@@ -1412,12 +1467,12 @@ export default function CodeEditorNew() {
                             </div>
                           )}
 
-                          {/* Error with better formatting */}
-                          {testResults.error && (
+                          {/* Compilation/Runtime Error */}
+                          {(testResults.stderr || testResults.compile_output || testResults.error) && (
                             <div>
                               <label className="text-sm font-medium mb-1 block text-red-500">Error:</label>
                               <div className="bg-red-900/20 border border-red-500/30 rounded p-3 font-mono text-sm text-red-400 whitespace-pre-wrap overflow-x-auto">
-                                {testResults.error}
+                                {testResults.compile_output || testResults.stderr || testResults.error}
                               </div>
                             </div>
                           )}
@@ -1452,11 +1507,10 @@ export default function CodeEditorNew() {
               <button
                 onClick={handleRunCode}
                 disabled={running}
-                className={`px-4 py-2 rounded text-sm font-medium transition flex items-center gap-2 ${
-                  isDark 
-                    ? 'bg-[#333333] hover:bg-[#3a3a3a] text-white' 
-                    : 'bg-gray-200 hover:bg-gray-300 text-gray-900'
-                }`}
+                className={`px-4 py-2 rounded text-sm font-medium transition flex items-center gap-2 ${isDark
+                  ? 'bg-[#333333] hover:bg-[#3a3a3a] text-white'
+                  : 'bg-gray-200 hover:bg-gray-300 text-gray-900'
+                  }`}
               >
                 {running ? (
                   <>
