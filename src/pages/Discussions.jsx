@@ -110,7 +110,7 @@ export default function Discussions() {
             <ThemeToggle />
             <button
               onClick={() => setShowNewDiscussion(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 rounded-lg transition"
+              className="flex items-center gap-2 px-4 py-2 bg-orange-600 hover:bg-orange-700 rounded-lg transition"
             >
               <Plus className="w-4 h-4" />
               New Discussion
@@ -126,7 +126,7 @@ export default function Discussions() {
           <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value)}
-            className="px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-indigo-500"
+            className="px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-orange-500"
           >
             <option value="recent">Most Recent</option>
             <option value="popular">Most Popular</option>
@@ -136,7 +136,7 @@ export default function Discussions() {
           <select
             value={filterTag}
             onChange={(e) => setFilterTag(e.target.value)}
-            className="px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-indigo-500"
+            className="px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-orange-500"
           >
             <option value="">All Tags</option>
             {tags.map(tag => (
@@ -154,7 +154,7 @@ export default function Discussions() {
             <p className="text-slate-400 mb-4">No discussions yet</p>
             <button
               onClick={() => setShowNewDiscussion(true)}
-              className="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 rounded-lg transition"
+              className="px-6 py-3 bg-orange-600 hover:bg-orange-700 rounded-lg transition"
             >
               Start the first discussion
             </button>
@@ -207,7 +207,7 @@ export default function Discussions() {
                   {/* Content */}
                   <div className="flex-1">
                     <div className="flex items-start justify-between mb-2">
-                      <h3 className="text-xl font-bold text-white hover:text-indigo-400 transition">
+                      <h3 className="text-xl font-bold text-white hover:text-orange-400 transition">
                         {discussion.title}
                       </h3>
                       {discussion.isSolution && (

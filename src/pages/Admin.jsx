@@ -333,13 +333,6 @@ export default function Admin() {
           <div className="flex items-center gap-4">
             <ThemeToggle />
             <button
-              onClick={() => navigate('/admin/resources')}
-              className="flex items-center gap-2 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg transition font-medium text-sm"
-            >
-              <Tags className="w-4 h-4" />
-              Manage Resources
-            </button>
-            <button
               onClick={() => navigate('/admin/problem-metadata')}
               className="flex items-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white hover:bg-gray-800 dark:hover:bg-gray-100 text-white dark:text-gray-900 rounded-lg transition font-medium text-sm"
             >
@@ -475,7 +468,7 @@ export default function Admin() {
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="text-sm font-semibold text-gray-900 dark:text-white">
-                              {u.rating || 1200}
+                              {u.rating || 0}
                             </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
@@ -1218,13 +1211,15 @@ export default function Admin() {
                           )}
                         </div>
                       </div>
-                      <button
-                        onClick={() => handleDeleteContest(contest._id)}
-                        className="ml-4 p-2 text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition"
-                        title="Delete Contest"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => handleDeleteContest(contest._id)}
+                          className="p-2 text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition"
+                          title="Delete Contest"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
                     </div>
                   </div>
                 ))

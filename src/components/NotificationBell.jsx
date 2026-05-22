@@ -1,14 +1,18 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useNotificationStore } from '../store/notificationStore';
-import { Bell, Check, Trash2, X } from 'lucide-react';
+import { Bell, Check, Trash2, X, Trophy, Calendar, Users, Target, Medal, Swords, Megaphone } from 'lucide-react';
 import { getSocket } from '../utils/socket';
+import { useMatchStore } from '../store/matchStore';
+import { toast } from 'react-hot-toast';
 
 export default function NotificationBell() {
   const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
   const { notifications, unreadCount, getNotifications, getUnreadCount, markAsRead, markAllAsRead, deleteNotification } = useNotificationStore();
+  const acceptChallenge = useMatchStore((state) => state.acceptChallenge);
+  const rejectChallenge = useMatchStore((state) => state.rejectChallenge);
 
   useEffect(() => {
     // Load initial notifications and unread count
@@ -73,22 +77,22 @@ export default function NotificationBell() {
       case 'challenge_received':
       case 'challenge_accepted':
       case 'challenge_rejected':
-        return '⚔️';
+        return <Swords className="w-5 h-5 text-blue-500" />;
       case 'match_result':
-        return '🏆';
+        return <Trophy className="w-5 h-5 text-yellow-500" />;
       case 'contest_starting':
       case 'contest_reminder':
-        return '🎯';
+        return <Target className="w-5 h-5 text-red-500" />;
       case 'admin_challenge':
-        return '📢';
+        return <Megaphone className="w-5 h-5 text-purple-500" />;
       case 'achievement':
-        return '🏅';
+        return <Medal className="w-5 h-5 text-yellow-600" />;
       case 'friend_request':
-        return '👥';
+        return <Users className="w-5 h-5 text-green-500" />;
       case 'daily_challenge':
-        return '📅';
+        return <Calendar className="w-5 h-5 text-orange-500" />;
       default:
-        return '🔔';
+        return <Bell className="w-5 h-5 text-gray-500" />;
     }
   };
 
@@ -165,8 +169,7 @@ export default function NotificationBell() {
                     }`}
                   >
                     <div className="flex items-start gap-3">
-                      {/* Icon */}
-                      <div className="text-2xl flex-shrink-0">
+                      <div className="flex-shrink-0 mt-0.5">
                         {getNotificationIcon(notification.type)}
                       </div>
 
@@ -185,6 +188,42 @@ export default function NotificationBell() {
                         <p className="text-xs text-slate-400 mt-1 line-clamp-2">
                           {notification.message}
                         </p>
+                        
+                        {notification.type === 'challenge_received' && notification.data?.matchId && (
+                          <div className="flex gap-2 mt-2">
+                            <button
+                              onClick={async (e) => {
+                                e.stopPropagation();
+                                try {
+                                  await acceptChallenge(notification.data.matchId);
+                                  await deleteNotification(notification._id);
+                                  setIsOpen(false);
+                                  navigate(`/match/${notification.data.matchId}`);
+                                } catch (error) {
+                                  toast.error(error.response?.data?.message || 'Failed to accept challenge');
+                                }
+                              }}
+                              className="px-3 py-1 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-medium rounded transition"
+                            >
+                              Accept
+                            </button>
+                            <button
+                              onClick={async (e) => {
+                                e.stopPropagation();
+                                try {
+                                  await rejectChallenge(notification.data.matchId);
+                                  await deleteNotification(notification._id);
+                                } catch (error) {
+                                  console.error('Failed to reject challenge', error);
+                                }
+                              }}
+                              className="px-3 py-1 bg-slate-700 hover:bg-slate-600 text-white text-xs font-medium rounded transition"
+                            >
+                              Decline
+                            </button>
+                          </div>
+                        )}
+
                         <div className="flex items-center justify-between mt-2">
                           <span className="text-xs text-slate-500">
                             {formatTime(notification.createdAt)}

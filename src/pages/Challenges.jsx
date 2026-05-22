@@ -81,7 +81,7 @@ export default function Challenges() {
   };
 
   const renderChallengeCard = (challenge, showStartButton = false) => (
-    <div key={challenge._id} className="glass border border-slate-700 rounded-lg p-4 sm:p-6 hover:border-indigo-500 transition">
+    <div key={challenge._id} className="glass border border-slate-700 rounded-lg p-4 sm:p-6 hover:border-orange-500 transition">
       <div className="flex flex-col sm:flex-row items-start justify-between mb-4 gap-3">
         <div className="flex-1 w-full">
           <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-2">
@@ -110,24 +110,24 @@ export default function Challenges() {
           <span>{challenge.problem?.title}</span>
         </div>
         <div className="flex items-center gap-2 text-sm text-slate-400">
-          <Users className="w-4 h-4 text-indigo-400" />
+          <Users className="w-4 h-4 text-orange-400" />
           <span>{challenge.totalParticipants} participants</span>
         </div>
         <div className="flex items-center gap-2 text-sm text-slate-400">
-          <Calendar className="w-4 h-4 text-indigo-400" />
+          <Calendar className="w-4 h-4 text-orange-400" />
           <span>{new Date(challenge.startDate).toLocaleDateString()}</span>
         </div>
         <div className="flex items-center gap-2 text-sm text-slate-400">
-          <Clock className="w-4 h-4 text-indigo-400" />
+          <Clock className="w-4 h-4 text-orange-400" />
           <span>{getTimeRemaining(challenge.endDate)}</span>
         </div>
       </div>
 
       {challenge.rewards?.points > 0 && (
-        <div className="mb-4 p-3 bg-indigo-900/20 border border-indigo-700 rounded-lg">
+        <div className="mb-4 p-3 bg-orange-900/20 border border-orange-700 rounded-lg">
           <div className="flex items-center gap-2 text-sm">
             <Trophy className="w-4 h-4 text-yellow-400" />
-            <span className="text-indigo-300">
+            <span className="text-orange-300">
               Rewards: {challenge.rewards.points} points
               {challenge.rewards.badge && ` + ${challenge.rewards.badge} badge`}
             </span>
@@ -201,7 +201,7 @@ export default function Challenges() {
             onClick={() => setActiveTab('active')}
             className={`py-4 px-2 font-semibold border-b-2 transition ${
               activeTab === 'active'
-                ? 'border-indigo-500 text-indigo-400'
+                ? 'border-orange-500 text-orange-400'
                 : 'border-transparent text-slate-400 hover:text-slate-300'
             }`}
           >
@@ -211,7 +211,7 @@ export default function Challenges() {
             onClick={() => setActiveTab('upcoming')}
             className={`py-4 px-2 font-semibold border-b-2 transition ${
               activeTab === 'upcoming'
-                ? 'border-indigo-500 text-indigo-400'
+                ? 'border-orange-500 text-orange-400'
                 : 'border-transparent text-slate-400 hover:text-slate-300'
             }`}
           >
@@ -221,7 +221,7 @@ export default function Challenges() {
             onClick={() => setActiveTab('completed')}
             className={`py-4 px-2 font-semibold border-b-2 transition ${
               activeTab === 'completed'
-                ? 'border-indigo-500 text-indigo-400'
+                ? 'border-orange-500 text-orange-400'
                 : 'border-transparent text-slate-400 hover:text-slate-300'
             }`}
           >
@@ -234,7 +234,7 @@ export default function Challenges() {
       <div className="max-w-7xl mx-auto px-6 py-8">
         {loading ? (
           <div className="text-center py-12">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-500 mx-auto"></div>
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto"></div>
             <p className="text-slate-400 mt-4">Loading challenges...</p>
           </div>
         ) : (

@@ -59,10 +59,10 @@ export default function Leaderboard() {
                   <tr className="bg-gray-50 dark:bg-dark-800 border-b border-gray-200 dark:border-dark-700">
                     <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">Rank</th>
                     <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">Player</th>
-                    <th className="px-6 py-4 text-center text-sm font-semibold text-gray-700 dark:text-gray-300">Rating</th>
+                    <th className="px-6 py-4 text-center text-sm font-semibold text-gray-700 dark:text-gray-300">Battle Rating</th>
+                    <th className="px-6 py-4 text-center text-sm font-semibold text-gray-700 dark:text-gray-300">Contest Rating</th>
                     <th className="px-6 py-4 text-center text-sm font-semibold text-gray-700 dark:text-gray-300">Wins</th>
                     <th className="px-6 py-4 text-center text-sm font-semibold text-gray-700 dark:text-gray-300">Losses</th>
-                    <th className="px-6 py-4 text-center text-sm font-semibold text-gray-700 dark:text-gray-300">Draws</th>
                     <th className="px-6 py-4 text-center text-sm font-semibold text-gray-700 dark:text-gray-300">Win Rate</th>
                     <th className="px-6 py-4 text-center text-sm font-semibold text-gray-700 dark:text-gray-300">Matches</th>
                   </tr>
@@ -84,13 +84,17 @@ export default function Leaderboard() {
                       </td>
                       <td className="px-6 py-4 font-semibold text-gray-900 dark:text-white">{player.username}</td>
                       <td className="px-6 py-4 text-center">
-                        <span className="px-3 py-1 bg-gray-200 dark:bg-dark-800 text-gray-900 dark:text-white rounded-full font-bold">
+                        <span className="px-3 py-1 bg-orange-100 dark:bg-orange-900/20 text-orange-700 dark:text-orange-300 rounded-full font-bold text-sm">
                           {player.rating}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-center">
+                        <span className="px-3 py-1 bg-blue-100 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 rounded-full font-bold text-sm">
+                          {player.contestRating || 0}
                         </span>
                       </td>
                       <td className="px-6 py-4 text-center text-green-600 dark:text-green-500 font-semibold">{player.wins}</td>
                       <td className="px-6 py-4 text-center text-red-600 dark:text-red-500 font-semibold">{player.losses}</td>
-                      <td className="px-6 py-4 text-center text-gray-600 dark:text-gray-400 font-semibold">{player.draws}</td>
                       <td className="px-6 py-4 text-center font-semibold text-gray-900 dark:text-white">{player.winRate}%</td>
                       <td className="px-6 py-4 text-center font-semibold text-gray-900 dark:text-white">{player.totalMatches}</td>
                     </tr>

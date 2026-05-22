@@ -23,7 +23,7 @@ export default function VerifyEmail() {
       if (response.data.success) {
         setStatus('success');
         setMessage(response.data.message);
-        toast.success('Email verified successfully! 🎉');
+        toast.success('Email verified successfully!');
         
         // Redirect to login after 3 seconds
         setTimeout(() => {
@@ -77,7 +77,7 @@ export default function VerifyEmail() {
                   <CheckCircle className="w-10 h-10 text-green-600 dark:text-green-400" />
                 </div>
                 <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-3">
-                  Email Verified! 🎉
+                  Email Verified!
                 </h2>
                 <p className="text-gray-600 dark:text-gray-400 mb-6">
                   {message}

@@ -212,7 +212,7 @@ export default function AdminResources() {
                   <div className="flex gap-2">
                     <button
                       onClick={() => handleEdit(resource)}
-                      className={`p-1.5 rounded transition-colors ${isDark ? 'hover:bg-dark-800 text-blue-400' : 'hover:bg-blue-50 text-blue-600'}`}
+                      className={`p-1.5 rounded transition-colors ${isDark ? 'hover:bg-dark-800 text-orange-400' : 'hover:bg-orange-50 text-orange-600'}`}
                     >
                       <Edit2 className="w-4 h-4" />
                     </button>

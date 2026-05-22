@@ -85,7 +85,6 @@ export default function FriendChallenge() {
         {!challengeData ? (
           <div className="card">
             <div className="text-center mb-8">
-              <div className="text-6xl mb-4">👥</div>
               <h2 className="text-3xl font-bold mb-2">Challenge Your Friend</h2>
               <p className="text-slate-400">
                 Send a challenge via email. If they're online, they'll get a live notification!
@@ -119,17 +118,17 @@ export default function FriendChallenge() {
 
             <div className="mt-12 grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="card">
-                <h3 className="text-lg font-bold mb-3">✨ Features</h3>
+                <h3 className="text-lg font-bold mb-3">Features</h3>
                 <ul className="text-slate-400 space-y-2 text-sm">
-                  <li>• 📧 Send via email</li>
-                  <li>• 🔔 Live notifications if online</li>
-                  <li>• 🎯 Same DSA problem</li>
-                  <li>• 🏆 Rating changes apply</li>
+                  <li>• Send via email</li>
+                  <li>• Live notifications if online</li>
+                  <li>• Same DSA problem</li>
+                  <li>• Rating changes apply</li>
                 </ul>
               </div>
 
               <div className="card">
-                <h3 className="text-lg font-bold mb-3">🎯 How It Works</h3>
+                <h3 className="text-lg font-bold mb-3">How It Works</h3>
                 <ul className="text-slate-400 space-y-2 text-sm">
                   <li>1. Enter friend's email</li>
                   <li>2. Send challenge</li>
@@ -141,7 +140,6 @@ export default function FriendChallenge() {
           </div>
         ) : (
           <div className="card text-center">
-            <div className="text-6xl mb-6">🎉</div>
             <h2 className="text-3xl font-bold mb-4">Challenge Sent!</h2>
 
             <div className="mb-8 p-4 bg-slate-800 rounded-lg">
@@ -153,13 +151,13 @@ export default function FriendChallenge() {
             {isOnline ? (
               <div className="mb-8 p-4 bg-green-900 border border-green-700 rounded-lg">
                 <p className="text-green-300 text-sm">
-                  ✅ Your friend is online! They'll see the challenge notification right now.
+                  Your friend is online! They'll see the challenge notification right now.
                 </p>
               </div>
             ) : (
               <div className="mb-8 p-4 bg-yellow-900 border border-yellow-700 rounded-lg">
                 <p className="text-yellow-300 text-sm">
-                  ⏳ Your friend is offline. They'll see the challenge when they log in.
+                  Your friend is offline. They'll see the challenge when they log in.
                 </p>
               </div>
             )}
@@ -184,7 +182,7 @@ export default function FriendChallenge() {
 
             <div className="mt-8 p-4 bg-blue-900 border border-blue-700 rounded-lg">
               <p className="text-blue-300 text-sm">
-                💡 Tip: Once your friend accepts the challenge, you'll both be taken to the code editor to solve the problem!
+                Tip: Once your friend accepts the challenge, you'll both be taken to the code editor to solve the problem!
               </p>
             </div>
           </div>
