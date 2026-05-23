@@ -181,9 +181,6 @@ export default function Landing() {
               <a href="#how-it-works" className={`text-sm font-medium ${textMuted} hover:text-orange-500 transition-colors duration-200`}>
                 How It Works
               </a>
-              <a href="#community" className={`text-sm font-medium ${textMuted} hover:text-orange-500 transition-colors duration-200`}>
-                Community
-              </a>
             </nav>
 
             {/* Right Actions */}
@@ -529,92 +526,6 @@ export default function Landing() {
                 Get instant explanations for problems using AI-powered insights.
               </p>
             </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Community Section */}
-      <section id="community" className={`py-20 ${bgColor}`}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid md:grid-cols-2 gap-12 items-center">
-            <div>
-              <h2 className={`text-4xl font-bold mb-6 ${textColor}`}>Join the community</h2>
-              <p className={`text-lg ${textMuted} mb-8`}>
-                Collaborate, find support, and share your coding journey by joining our vibrant community of developers.
-              </p>
-              <div className="flex flex-wrap gap-4 mb-8">
-                <div className={`flex items-center gap-3 ${cardBg} border ${borderColor} rounded-lg px-6 py-4`}>
-                  <Users className="w-8 h-8 text-orange-500" />
-                  <div>
-                    <div className={`text-2xl font-bold ${textColor}`}>10K+</div>
-                    <div className={`text-sm ${textMuted}`}>Active Users</div>
-                  </div>
-                </div>
-                <div className={`flex items-center gap-3 ${cardBg} border ${borderColor} rounded-lg px-6 py-4`}>
-                  <Trophy className="w-8 h-8 text-orange-500" />
-                  <div>
-                    <div className={`text-2xl font-bold ${textColor}`}>50K+</div>
-                    <div className={`text-sm ${textMuted}`}>Battles Completed</div>
-                  </div>
-                </div>
-              </div>
-              <button 
-                onClick={() => navigate('/register')}
-                className="px-8 py-3.5 bg-orange-500 text-white rounded-lg font-medium hover:bg-orange-600 transition-colors inline-flex items-center gap-2"
-              >
-                Get involved
-                <ArrowRight className="w-5 h-5" />
-              </button>
-            </div>
-            <div className={`${cardBg} border ${borderColor} rounded-2xl p-8 shadow-xl`}>
-              <h3 className={`text-xl font-bold mb-6 ${textColor}`}>Connect with us</h3>
-              <div className="space-y-4">
-                <a href="https://github.com" className={`flex items-center gap-3 p-4 rounded-lg ${isDark ? 'hover:bg-gray-800' : 'hover:bg-gray-50'} transition-colors`}>
-                  <div className="w-10 h-10 bg-gray-500/10 rounded-lg flex items-center justify-center">
-                    <Github className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <div className={`font-medium ${textColor}`}>GitHub</div>
-                    <div className={`text-sm ${textMuted}`}>Star us on GitHub</div>
-                  </div>
-                </a>
-                <a href="https://linkedin.com" className={`flex items-center gap-3 p-4 rounded-lg ${isDark ? 'hover:bg-gray-800' : 'hover:bg-gray-50'} transition-colors`}>
-                  <div className="w-10 h-10 bg-blue-500/10 rounded-lg flex items-center justify-center">
-                    <Linkedin className="w-5 h-5 text-blue-500" />
-                  </div>
-                  <div>
-                    <div className={`font-medium ${textColor}`}>LinkedIn</div>
-                    <div className={`text-sm ${textMuted}`}>Follow for updates</div>
-                  </div>
-                </a>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* CTA Section */}
-      <section className={`py-20 ${bgColor} border-t ${borderColor}`}>
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className={`text-4xl font-bold mb-6 ${textColor}`}>Start Dominating on CodeBattle</h2>
-          <p className={`text-lg ${textMuted} mb-8 max-w-2xl mx-auto`}>
-            Join other developers who are improving their coding skills through real-time battles and challenges.
-          </p>
-          <div className="flex flex-wrap justify-center gap-4">
-            <button 
-              onClick={() => navigate('/register')}
-              className="px-8 py-3.5 bg-orange-500 text-white rounded-lg font-medium hover:bg-orange-600 transition-colors inline-flex items-center gap-2"
-            >
-              Get Started Free
-              <ArrowRight className="w-5 h-5" />
-            </button>
-            <button 
-              onClick={() => navigate('/problems')}
-              className={`px-8 py-3.5 rounded-lg font-medium transition-colors inline-flex items-center gap-2 ${isDark ? 'bg-gray-800 hover:bg-gray-700' : 'bg-gray-100 hover:bg-gray-200'}`}
-            >
-              Explore Problems
-              <ChevronRight className="w-5 h-5" />
-            </button>
           </div>
         </div>
       </section>
