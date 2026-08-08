@@ -10,10 +10,13 @@ import {
   removeListener
 } from '../utils/socket';
 import { ArrowLeft, Swords, Users, Clock, X } from 'lucide-react';
+import GuestHeader from '../components/GuestHeader';
+import { useRequireAuth } from '../contexts/AuthGuardContext';
 
 export default function Matchmaking() {
   const navigate = useNavigate();
   const { user } = useAuthStore();
+  const requireAuth = useRequireAuth();
   const [searching, setSearching] = useState(false);
   const [waitTime, setWaitTime] = useState(0);
   const [queueSize, setQueueSize] = useState(0);
@@ -54,6 +57,7 @@ export default function Matchmaking() {
   }, [navigate]);
 
   const handleStartSearch = () => {
+    if (!requireAuth(null, 'Sign in for 1v1 Battle Arena', 'Create a free account or sign in to join real-time 1v1 matchmaking, climb ranks, and earn battle rating.')) return;
     if (!user) return;
     joinMatchmakingQueue(user._id, user.rating);
   };
@@ -73,18 +77,21 @@ export default function Matchmaking() {
   };
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-white dark:bg-slate-950 text-slate-900 dark:text-white transition-colors">
       {/* Header */}
-      <header className="glass border-b border-slate-700">
-        <div className="max-w-7xl mx-auto px-4 py-4 flex items-center gap-4">
-          <button
-            onClick={() => navigate('/')}
-            className="flex items-center gap-2 px-4 py-2 hover:bg-slate-700 rounded-lg transition"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Back
-          </button>
-          <h1 className="text-2xl font-bold">Ranked Matchmaking</h1>
+      <header className="glass border-b border-gray-200 dark:border-slate-700">
+        <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => navigate('/')}
+              className="flex items-center gap-2 px-4 py-2 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg transition"
+            >
+              <ArrowLeft className="w-4 h-4 text-gray-700 dark:text-gray-300" />
+              Back
+            </button>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Ranked Matchmaking</h1>
+          </div>
+          <GuestHeader />
         </div>
       </header>
 

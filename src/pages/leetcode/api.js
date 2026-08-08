@@ -1,16 +1,19 @@
 import { API_URL } from './constants';
 
+const authHeader = (token) => (token && token !== 'null' && token !== 'undefined' ? { Authorization: `Bearer ${token}` } : {});
+
 export async function fetchProblem(problemId, token) {
   const res = await fetch(`${API_URL}/problems/${problemId}`, {
-    headers: { Authorization: `Bearer ${token}` }
+    headers: { ...authHeader(token) }
   });
   if (!res.ok) throw new Error('Failed to fetch problem');
   return res.json();
 }
 
 export async function fetchMetadata(problemId, token) {
+  if (!token) return null;
   const res = await fetch(`${API_URL}/problem-metadata/${problemId}/user-preferences`, {
-    headers: { Authorization: `Bearer ${token}` }
+    headers: { ...authHeader(token) }
   });
   if (!res.ok) return null;
   return res.json();
@@ -18,15 +21,16 @@ export async function fetchMetadata(problemId, token) {
 
 export async function fetchFullMetadata(problemId, token) {
   const res = await fetch(`${API_URL}/problem-metadata/${problemId}`, {
-    headers: { Authorization: `Bearer ${token}` }
+    headers: { ...authHeader(token) }
   });
   if (!res.ok) return null;
   return res.json();
 }
 
 export async function fetchSubmissions(problemId, token) {
+  if (!token) return [];
   const res = await fetch(`${API_URL}/submissions?problemId=${problemId}&limit=20`, {
-    headers: { Authorization: `Bearer ${token}` }
+    headers: { ...authHeader(token) }
   });
   if (!res.ok) return [];
   const data = await res.json();
@@ -35,7 +39,7 @@ export async function fetchSubmissions(problemId, token) {
 
 export async function fetchSubmissionById(id, token) {
   const res = await fetch(`${API_URL}/submissions/${id}`, {
-    headers: { Authorization: `Bearer ${token}` }
+    headers: { ...authHeader(token) }
   });
   if (!res.ok) return null;
   return res.json();
@@ -43,7 +47,7 @@ export async function fetchSubmissionById(id, token) {
 
 export async function fetchDiscussions(problemId, token) {
   const res = await fetch(`${API_URL}/discussions/problem/${problemId}`, {
-    headers: { Authorization: `Bearer ${token}` }
+    headers: { ...authHeader(token) }
   });
   if (!res.ok) return [];
   const data = await res.json();
@@ -52,7 +56,7 @@ export async function fetchDiscussions(problemId, token) {
 
 export async function fetchHints(problemId, token) {
   const res = await fetch(`${API_URL}/judge/hints/${problemId}`, {
-    headers: { Authorization: `Bearer ${token}` }
+    headers: { ...authHeader(token) }
   });
   if (!res.ok) return [];
   const data = await res.json();
@@ -60,17 +64,19 @@ export async function fetchHints(problemId, token) {
 }
 
 export async function fetchDraft(problemId, token) {
+  if (!token) return null;
   const res = await fetch(`${API_URL}/drafts/${problemId}`, {
-    headers: { Authorization: `Bearer ${token}` }
+    headers: { ...authHeader(token) }
   });
   if (!res.ok) return null;
   return res.json();
 }
 
 export async function saveDraft(problemId, code, language, token) {
+  if (!token) return;
   await fetch(`${API_URL}/drafts`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    headers: { 'Content-Type': 'application/json', ...authHeader(token) },
     body: JSON.stringify({ problemId, code, language })
   });
 }
@@ -79,7 +85,7 @@ export async function saveDraft(problemId, code, language, token) {
 export async function runCode(code, language, problemId, testCaseIndex, token) {
   const res = await fetch(`${API_URL}/judge/run`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    headers: { 'Content-Type': 'application/json', ...authHeader(token) },
     body: JSON.stringify({ code, language, problemId, testCaseIndex })
   });
   if (!res.ok) {
@@ -93,7 +99,7 @@ export async function runCode(code, language, problemId, testCaseIndex, token) {
 export async function runCodeBatch(code, language, problemId, token, customCases = []) {
   const res = await fetch(`${API_URL}/judge/run-batch`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    headers: { 'Content-Type': 'application/json', ...authHeader(token) },
     body: JSON.stringify({ code, language, problemId, customCases })
   });
   if (!res.ok) {
@@ -107,7 +113,7 @@ export async function runCodeBatch(code, language, problemId, token, customCases
 export async function runCodeCustom(code, language, input, token) {
   const res = await fetch(`${API_URL}/judge/run`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    headers: { 'Content-Type': 'application/json', ...authHeader(token) },
     body: JSON.stringify({ code, language, input })
   });
   if (!res.ok) {
@@ -120,7 +126,7 @@ export async function runCodeCustom(code, language, input, token) {
 export async function submitCode(code, language, problemId, token) {
   const res = await fetch(`${API_URL}/judge/submit`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    headers: { 'Content-Type': 'application/json', ...authHeader(token) },
     body: JSON.stringify({ code, language, problemId })
   });
   if (!res.ok) {
@@ -131,24 +137,27 @@ export async function submitCode(code, language, problemId, token) {
 }
 
 export async function toggleLike(problemId, token) {
+  if (!token) throw new Error('Please sign in to like this problem');
   const res = await fetch(`${API_URL}/problem-metadata/${problemId}/like`, {
-    method: 'POST', headers: { Authorization: `Bearer ${token}` }
+    method: 'POST', headers: { ...authHeader(token) }
   });
   if (!res.ok) throw new Error('Failed');
   return res.json();
 }
 
 export async function toggleDislike(problemId, token) {
+  if (!token) throw new Error('Please sign in to rate this problem');
   const res = await fetch(`${API_URL}/problem-metadata/${problemId}/dislike`, {
-    method: 'POST', headers: { Authorization: `Bearer ${token}` }
+    method: 'POST', headers: { ...authHeader(token) }
   });
   if (!res.ok) throw new Error('Failed');
   return res.json();
 }
 
 export async function toggleBookmark(problemId, token) {
+  if (!token) throw new Error('Please sign in to bookmark problems');
   const res = await fetch(`${API_URL}/problem-metadata/${problemId}/bookmark`, {
-    method: 'POST', headers: { Authorization: `Bearer ${token}` }
+    method: 'POST', headers: { ...authHeader(token) }
   });
   if (!res.ok) throw new Error('Failed');
   return res.json();
@@ -157,48 +166,31 @@ export async function toggleBookmark(problemId, token) {
 export async function fetchEditorial(problemId, token) {
   const res = await fetch(`${API_URL}/explanations/problem/${problemId}/solution`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-    body: '{}'
-  });
-  if (!res.ok) throw new Error('Failed');
-  return res.json();
-}
-
-export async function fetchNextProblem(problemId, token) {
-  const res = await fetch(`${API_URL}/problems/${problemId}/next`, {
-    headers: { Authorization: `Bearer ${token}` }
+    headers: { 'Content-Type': 'application/json', ...authHeader(token) },
+    body: JSON.stringify({ userCode: '// request solution' })
   });
   if (!res.ok) return null;
   return res.json();
 }
 
-export async function fetchPrevProblem(problemId, token) {
-  const res = await fetch(`${API_URL}/problems/${problemId}/previous`, {
-    headers: { Authorization: `Bearer ${token}` }
+export async function createDiscussion(problemId, title, content, tags, token) {
+  if (!token) throw new Error('Please sign in to post discussions');
+  const res = await fetch(`${API_URL}/discussions`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...authHeader(token) },
+    body: JSON.stringify({ problemId, title, content, tags })
   });
-  if (!res.ok) return null;
+  if (!res.ok) throw new Error('Failed to post');
   return res.json();
 }
 
-export async function fetchPercentile(problemId, token) {
-  const res = await fetch(`${API_URL}/judge/percentile/${problemId}`, {
-    headers: { Authorization: `Bearer ${token}` }
+export async function createComment(discussionId, content, token) {
+  if (!token) throw new Error('Please sign in to comment');
+  const res = await fetch(`${API_URL}/discussions/${discussionId}/comment`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...authHeader(token) },
+    body: JSON.stringify({ content })
   });
-  if (!res.ok) return null;
+  if (!res.ok) throw new Error('Failed to comment');
   return res.json();
-}
-
-// Real-time syntax check (compile-only, no execution)
-export async function syntaxCheck(code, language, token) {
-  try {
-    const res = await fetch(`${API_URL}/judge/syntax-check`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ code, language })
-    });
-    if (!res.ok) return { valid: true };
-    return res.json();
-  } catch {
-    return { valid: true }; // Never block user on network errors
-  }
 }

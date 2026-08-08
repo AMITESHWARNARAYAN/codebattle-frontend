@@ -41,7 +41,6 @@ export const useAuthStore = create((set) => ({
       });
 
       localStorage.setItem('token', response.data.token);
-      localStorage.setItem('isAdmin', response.data.isAdmin || false);
       set({
         user: response.data,
         token: response.data.token,

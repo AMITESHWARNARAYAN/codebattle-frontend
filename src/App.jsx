@@ -1,4 +1,5 @@
 import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+import { AuthGuardProvider } from './contexts/AuthGuardContext';
 import { useEffect } from 'react';
 import { useAuthStore } from './store/authStore';
 import { useThemeStore } from './store/themeStore';
@@ -31,6 +32,7 @@ import Challenges from './pages/Challenges';
 import Contests from './pages/Contests';
 import ContestDetail from './pages/ContestDetail';
 import ContestLive from './pages/ContestLive';
+import ContestRanking from './pages/ContestRanking';
 import Notifications from './pages/Notifications';
 import Stories from './pages/Stories';
 import CodeEditorNew from './pages/CodeEditorNew';
@@ -39,6 +41,15 @@ import CodeEditorNew from './pages/CodeEditorNew';
 const ProtectedRoute = ({ children }) => {
   const token = useAuthStore((state) => state.token);
   return token ? children : <Navigate to="/login" />;
+};
+
+// Admin Route Component — requires both auth and admin role
+const AdminRoute = ({ children }) => {
+  const token = useAuthStore((state) => state.token);
+  const user = useAuthStore((state) => state.user);
+  if (!token) return <Navigate to="/login" />;
+  if (user && !user.isAdmin) return <Navigate to="/" />;
+  return children;
 };
 
 // App Routes Component (has access to useNavigate)
@@ -109,7 +120,9 @@ function AppRoutes() {
             {/* Right Section: Actions & Close */}
             <div className="flex items-center space-x-4">
               <button
-                onClick={async () => {
+                onClick={async (e) => {
+                  e.currentTarget.disabled = true;
+                  e.currentTarget.textContent = 'Joining...';
                   toast.dismiss(t.id);
                   try {
                     await acceptChallenge(data.matchId);
@@ -118,7 +131,7 @@ function AppRoutes() {
                     toast.error('Failed to accept challenge');
                   }
                 }}
-                className="bg-white text-[#7fa64c] hover:bg-gray-100 font-bold px-4 py-1.5 rounded-md text-xs uppercase tracking-wider shadow-sm transition-all duration-150"
+                className="bg-white text-[#7fa64c] hover:bg-gray-100 font-bold px-4 py-1.5 rounded-md text-xs uppercase tracking-wider shadow-sm transition-all duration-150 disabled:opacity-60"
               >
                 Accept
               </button>
@@ -182,28 +195,29 @@ function AppRoutes() {
         <Route path="/verify-email/:token" element={<VerifyEmail />} />
 
         <Route path="/" element={token ? <ProtectedRoute><Dashboard /></ProtectedRoute> : <Landing />} />
-        <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
-        <Route path="/admin/problem-metadata" element={<ProtectedRoute><AdminProblemMetadata /></ProtectedRoute>} />
-        <Route path="/problems" element={<ProtectedRoute><Problems /></ProtectedRoute>} />
-        <Route path="/daily-challenge" element={<ProtectedRoute><DailyChallenge /></ProtectedRoute>} />
+        <Route path="/admin" element={<AdminRoute><Admin /></AdminRoute>} />
+        <Route path="/admin/problem-metadata" element={<AdminRoute><AdminProblemMetadata /></AdminRoute>} />
+        <Route path="/problems" element={<Problems />} />
+        <Route path="/daily-challenge" element={<DailyChallenge />} />
         <Route path="/submissions" element={<ProtectedRoute><Submissions /></ProtectedRoute>} />
-        <Route path="/discussions" element={<ProtectedRoute><Discussions /></ProtectedRoute>} />
-        <Route path="/challenges" element={<ProtectedRoute><Challenges /></ProtectedRoute>} />
-        <Route path="/contests" element={<ProtectedRoute><Contests /></ProtectedRoute>} />
-        <Route path="/contests/:id" element={<ProtectedRoute><ContestDetail /></ProtectedRoute>} />
+        <Route path="/discussions" element={<Discussions />} />
+        <Route path="/challenges" element={<Challenges />} />
+        <Route path="/contests" element={<Contests />} />
+        <Route path="/contests/:id" element={<ContestDetail />} />
         <Route path="/contests/:id/live" element={<ProtectedRoute><ContestLive /></ProtectedRoute>} />
-        <Route path="/matchmaking" element={<ProtectedRoute><Matchmaking /></ProtectedRoute>} />
-        <Route path="/friend-challenge" element={<ProtectedRoute><FriendChallenge /></ProtectedRoute>} />
+        <Route path="/contests/:id/ranking" element={<ContestRanking />} />
+        <Route path="/matchmaking" element={<Matchmaking />} />
+        <Route path="/friend-challenge" element={<FriendChallenge />} />
         <Route path="/match/solo" element={<ProtectedRoute><SoloPractice /></ProtectedRoute>} />
         <Route path="/match/join/:inviteCode" element={<ProtectedRoute><JoinChallenge /></ProtectedRoute>} />
         <Route path="/match/:matchId" element={<ProtectedRoute><CodeEditor /></ProtectedRoute>} />
-        <Route path="/code-editor/:problemId" element={<ProtectedRoute><CodeEditorNew /></ProtectedRoute>} />
-        <Route path="/problem/:problemId" element={<ProtectedRoute><CodeEditorNew /></ProtectedRoute>} />
+        <Route path="/code-editor/:problemId" element={<CodeEditorNew />} />
+        <Route path="/problem/:problemId" element={<CodeEditorNew />} />
         <Route path="/results/:matchId" element={<ProtectedRoute><Results /></ProtectedRoute>} />
-        <Route path="/leaderboard" element={<ProtectedRoute><Leaderboard /></ProtectedRoute>} />
-        <Route path="/profile/:username" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+        <Route path="/leaderboard" element={<Leaderboard />} />
+        <Route path="/profile/:username" element={<Profile />} />
         <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
-        <Route path="/stories" element={<ProtectedRoute><Stories /></ProtectedRoute>} />
+        <Route path="/stories" element={<Stories />} />
 
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
@@ -214,7 +228,9 @@ function AppRoutes() {
 function App() {
   return (
     <Router>
-      <AppRoutes />
+      <AuthGuardProvider>
+        <AppRoutes />
+      </AuthGuardProvider>
     </Router>
   );
 }

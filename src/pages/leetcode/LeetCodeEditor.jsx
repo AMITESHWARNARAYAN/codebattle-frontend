@@ -6,6 +6,7 @@ import { toast } from 'react-hot-toast';
 import { LANGUAGES, DEFAULT_CODE } from './constants';
 import * as api from './api';
 import { DescriptionTab, EditorialTab, SolutionsTab, SubmissionsTab, TestCasePanel, Confetti, ShortcutsModal } from './Panels';
+import { useThemeStore } from '../../store/themeStore';
 
 // Error Boundary
 class EditorErrorBoundary extends Component {
@@ -49,6 +50,7 @@ function LeetCodeEditorInner() {
   const monacoRef = useRef(null);
   const syntaxCheckIdRef = useRef(0);
   const cursorPlacedRef = useRef(false);
+  const { isDark, toggleTheme } = useThemeStore();
   const { token } = useAuthStore();
 
   const [problem, setProblem] = useState(location.state?.problem || null);
@@ -220,9 +222,20 @@ function LeetCodeEditorInner() {
     try {
       const r = await api.submitCode(code, language, problem._id, token);
       setSubmitResult(r);
-      if (r.status === 'Accepted') { toast.success('✓ All test cases passed!'); setShowConfetti(true); setTimeout(() => setShowConfetti(false), 3000); }
-      else toast.error(`✗ ${r.status}: ${r.testCasesPassed}/${r.totalTestCases} passed`);
-      api.fetchSubmissions(problemId, token).then(setSubmissions);
+      if (r.status === 'Accepted') {
+        if (!token) {
+          toast.success('✓ All test cases passed! Sign in to track your progress & rank.');
+        } else {
+          toast.success('✓ All test cases passed!');
+        }
+        setShowConfetti(true);
+        setTimeout(() => setShowConfetti(false), 3000);
+      } else {
+        toast.error(`✗ ${r.status}: ${r.testCasesPassed}/${r.totalTestCases} passed`);
+      }
+      if (token) {
+        api.fetchSubmissions(problemId, token).then(setSubmissions);
+      }
     } catch (e) { toast.error(e.message); }
     finally { setSubmitting(false); }
   };
@@ -257,48 +270,77 @@ function LeetCodeEditorInner() {
   const fmtTime = (s) => `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, '0')}`;
   const TABS = [{ id: 'description', label: 'Description' }, { id: 'editorial', label: 'Editorial' }, { id: 'solutions', label: 'Solutions', count: discussions.length }, { id: 'submissions', label: 'Submissions', count: submissions.length }];
 
-  if (loading) return <div className="h-screen bg-[#1a1a2e] flex items-center justify-center"><div className="w-6 h-6 border-2 border-[#3c3c3c] border-t-[#2cbb5d] rounded-full animate-spin" /></div>;
-  if (!problem) return <div className="h-screen bg-[#1a1a2e] flex items-center justify-center"><p className="text-[#ef4743] mb-3">Problem not found</p><button onClick={() => navigate('/problems')} className="px-4 py-2 bg-[#2cbb5d] text-white rounded-lg text-sm">Go Back</button></div>;
+  if (loading) return <div className="h-screen bg-slate-100 dark:bg-[#1a1a2e] flex items-center justify-center"><div className="w-6 h-6 border-2 border-slate-300 dark:border-[#3c3c3c] border-t-[#2cbb5d] rounded-full animate-spin" /></div>;
+  if (!problem) return <div className="h-screen bg-slate-100 dark:bg-[#1a1a2e] flex items-center justify-center text-center"><p className="text-[#ef4743] mb-3">Problem not found</p><button onClick={() => navigate('/problems')} className="px-4 py-2 bg-[#2cbb5d] text-white rounded-lg text-sm">Go Back</button></div>;
 
   const visibleTestCases = (problem.testCases || []).filter(tc => !tc.isHidden);
 
   return (
-    <div className="h-screen flex flex-col bg-[#1a1a2e] text-[#eff1f6] overflow-hidden select-none" style={{ fontFamily: "-apple-system,BlinkMacSystemFont,'Inter',sans-serif" }}>
+    <div className="h-screen flex flex-col bg-slate-100 dark:bg-[#1a1a2e] text-slate-800 dark:text-[#eff1f6] overflow-hidden select-none" style={{ fontFamily: "-apple-system,BlinkMacSystemFont,'Inter',sans-serif" }}>
       <Confetti show={showConfetti} />
       <ShortcutsModal show={showShortcuts} onClose={() => setShowShortcuts(false)} />
 
       {/* NAVBAR */}
-      <nav className="h-[46px] flex-shrink-0 bg-[#282828] border-b border-[#3c3c3c] flex items-center px-3 gap-2 z-20">
+      <nav className="h-[46px] flex-shrink-0 bg-slate-200 dark:bg-[#282828] border-b border-slate-300 dark:border-[#3c3c3c] flex items-center px-3 gap-2 z-20 text-slate-850 dark:text-[#eff1f6]">
         <button onClick={() => navigate('/problems')} className="text-[#ffa116] font-bold text-base mr-2 hover:opacity-80 transition">CB</button>
-        <button onClick={() => navigate('/problems')} className="p-1.5 rounded hover:bg-[#ffffff12] text-[#eff1f680] transition" title="Problem List">
+        <button onClick={() => navigate('/problems')} className="p-1.5 rounded hover:bg-slate-300 dark:hover:bg-[#ffffff12] text-slate-600 dark:text-[#eff1f680] transition" title="Problem List">
           <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16" /></svg>
         </button>
         <div className="flex items-center gap-0.5">
-          <button onClick={goPrev} className="p-1 rounded hover:bg-[#ffffff12] text-[#eff1f680] transition"><svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6" /></svg></button>
-          <button onClick={goNext} className="p-1 rounded hover:bg-[#ffffff12] text-[#eff1f680] transition"><svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6" /></svg></button>
+          <button onClick={goPrev} className="p-1 rounded hover:bg-slate-300 dark:hover:bg-[#ffffff12] text-slate-600 dark:text-[#eff1f680] transition"><svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6" /></svg></button>
+          <button onClick={goNext} className="p-1 rounded hover:bg-slate-300 dark:hover:bg-[#ffffff12] text-slate-600 dark:text-[#eff1f680] transition"><svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6" /></svg></button>
         </div>
-        <span className="text-sm font-medium truncate max-w-[300px]">{problem.title}</span>
+        <span className="text-sm font-medium truncate max-w-[300px] text-slate-800 dark:text-white">{problem.title}</span>
         <div className="flex-1" />
-        <button onClick={() => setShowShortcuts(true)} className="p-1.5 rounded hover:bg-[#ffffff12] text-[#eff1f680] transition text-xs" title="Shortcuts">⌨</button>
-        <div className="flex items-center gap-1.5 text-xs text-[#eff1f680] mr-2">
+        <button onClick={toggleTheme} className="p-1.5 rounded hover:bg-slate-300 dark:hover:bg-[#ffffff12] text-slate-600 dark:text-[#eff1f680] transition" title="Toggle Theme">
+          {isDark ? (
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <circle cx="12" cy="12" r="5"/>
+              <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+            </svg>
+          ) : (
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+            </svg>
+          )}
+        </button>
+        <button onClick={() => setShowShortcuts(true)} className="p-1.5 rounded hover:bg-slate-300 dark:hover:bg-[#ffffff12] text-slate-600 dark:text-[#eff1f680] transition text-xs" title="Shortcuts">⌨</button>
+        <div className="flex items-center gap-1.5 text-xs text-slate-600 dark:text-[#eff1f680] mr-2">
           <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" /><path d="M12 6v6l4 2" /></svg>
           {fmtTime(elapsed)}
         </div>
-        <button onClick={handleRun} disabled={running || submitting} className="h-[30px] px-3.5 rounded-lg text-xs font-medium border border-[#404040] text-[#eff1f6] hover:bg-[#ffffff12] disabled:opacity-40 transition flex items-center gap-1.5">
-          {running ? <div className="w-3 h-3 border border-[#eff1f680] border-t-white rounded-full animate-spin" /> : <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>}Run
+        <button onClick={handleRun} disabled={running || submitting} className="h-[30px] px-3.5 rounded-lg text-xs font-medium border border-slate-300 dark:border-[#404040] text-slate-800 dark:text-[#eff1f6] hover:bg-slate-300 dark:hover:bg-[#ffffff12] disabled:opacity-40 transition flex items-center gap-1.5">
+          {running ? <div className="w-3 h-3 border border-slate-500 dark:border-[#eff1f680] border-t-white rounded-full animate-spin" /> : <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>}Run
         </button>
         <button onClick={handleSubmit} disabled={running || submitting} className="h-[30px] px-3.5 rounded-lg text-xs font-medium bg-[#2cbb5d] text-white hover:bg-[#26a651] disabled:opacity-40 transition flex items-center gap-1.5">
           {submitting ? <div className="w-3 h-3 border border-white/50 border-t-white rounded-full animate-spin" /> : <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M4 12l5 5L20 6" /></svg>}Submit
         </button>
+
+        {!token && (
+          <div className="flex items-center gap-1.5 ml-2 pl-2 border-l border-slate-300 dark:border-[#3c3c3c]">
+            <button
+              onClick={() => navigate('/login')}
+              className="h-[30px] px-3 rounded-lg text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-300 dark:hover:bg-[#ffffff12] transition"
+            >
+              Sign In
+            </button>
+            <button
+              onClick={() => navigate('/register')}
+              className="h-[30px] px-3 rounded-lg text-xs font-semibold bg-orange-500 hover:bg-orange-600 text-white transition shadow-sm"
+            >
+              Register
+            </button>
+          </div>
+        )}
       </nav>
 
       {/* MAIN */}
       <div className="flex-1 flex overflow-hidden">
         {/* LEFT */}
-        <div className="flex flex-col overflow-hidden bg-[#282828] min-w-0" style={{ width: `${leftWidth}%` }}>
-          <div className="flex border-b border-[#3c3c3c] overflow-x-auto flex-shrink-0">
+        <div className="flex flex-col overflow-hidden bg-white dark:bg-[#282828] border-r border-slate-300 dark:border-none min-w-0" style={{ width: `${leftWidth}%` }}>
+          <div className="flex border-b border-slate-300 dark:border-[#3c3c3c] bg-slate-200 dark:bg-slate-900 overflow-x-auto flex-shrink-0">
             {TABS.map(t => (
-              <button key={t.id} onClick={() => setLeftTab(t.id)} className={`px-4 py-2.5 text-xs font-medium whitespace-nowrap border-b-2 transition flex items-center gap-1.5 ${leftTab === t.id ? 'border-white text-white' : 'border-transparent text-[#eff1f680] hover:text-[#eff1f6a0]'}`}>
+              <button key={t.id} onClick={() => setLeftTab(t.id)} className={`px-4 py-2.5 text-xs font-medium whitespace-nowrap border-b-2 transition flex items-center gap-1.5 ${leftTab === t.id ? 'border-slate-800 dark:border-white text-slate-800 dark:text-white' : 'border-transparent text-slate-500 dark:text-[#eff1f680] hover:text-slate-800 dark:hover:text-[#eff1f6a0]'}`}>
                 {t.label}
                 {t.count > 0 && <span className="px-1.5 py-0.5 rounded-full bg-[#ffffff15] text-[10px]">{t.count}</span>}
               </button>
@@ -316,35 +358,35 @@ function LeetCodeEditorInner() {
         <div className="w-[5px] flex-shrink-0 cursor-col-resize bg-[#1a1a2e] hover:bg-[#ffa11640] active:bg-[#ffa11660] transition-colors" onMouseDown={startHResize} />
 
         {/* RIGHT */}
-        <div className="flex-1 flex flex-col overflow-hidden bg-[#1e1e1e] min-w-0">
+        <div className="flex-1 flex flex-col overflow-hidden bg-slate-50 dark:bg-[#1e1e1e] min-w-0">
           {/* Editor Header */}
-          <div className="h-[38px] flex-shrink-0 flex items-center justify-between px-3 bg-[#282828] border-b border-[#3c3c3c]">
+          <div className="h-[38px] flex-shrink-0 flex items-center justify-between px-3 bg-slate-200 dark:bg-[#282828] border-b border-slate-300 dark:border-[#3c3c3c]">
             <div className="flex items-center gap-2">
               <svg className="w-3.5 h-3.5 text-[#2cbb5d]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M16 18l6-6-6-6M8 6l-6 6 6 6" /></svg>
-              <span className="text-xs font-medium">Code</span>
+              <span className="text-xs font-medium text-slate-800 dark:text-[#eff1f6]">Code</span>
             </div>
             <div className="flex items-center gap-2">
-              <select value={language} onChange={e => setLanguage(e.target.value)} className="bg-[#3c3c3c] text-[#eff1f6] text-xs rounded px-2 py-1 border-none outline-none cursor-pointer">
+              <select value={language} onChange={e => setLanguage(e.target.value)} className="bg-white dark:bg-[#3c3c3c] text-slate-800 dark:text-[#eff1f6] border border-slate-300 dark:border-none text-xs rounded px-2 py-1 outline-none cursor-pointer">
                 {LANGUAGES.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
               </select>
-              <button onClick={handleReset} className="p-1 rounded hover:bg-[#ffffff12] text-[#eff1f680] transition" title="Reset">
+              <button onClick={handleReset} className="p-1 rounded hover:bg-slate-300 dark:hover:bg-[#ffffff12] text-slate-600 dark:text-[#eff1f680] transition" title="Reset">
                 <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M1 4v6h6M23 20v-6h-6" /><path d="M20.49 9A9 9 0 005.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 013.51 15" /></svg>
               </button>
-              <button onClick={() => setFontSize(f => Math.min(22, f + 1))} className="p-1 rounded hover:bg-[#ffffff12] text-[#eff1f680] transition text-[10px] font-bold">A+</button>
-              <button onClick={() => setFontSize(f => Math.max(11, f - 1))} className="p-1 rounded hover:bg-[#ffffff12] text-[#eff1f680] transition text-[10px] font-bold">A-</button>
+              <button onClick={() => setFontSize(f => Math.min(22, f + 1))} className="p-1 rounded hover:bg-slate-300 dark:hover:bg-[#ffffff12] text-slate-600 dark:text-[#eff1f680] transition text-[10px] font-bold">A+</button>
+              <button onClick={() => setFontSize(f => Math.max(11, f - 1))} className="p-1 rounded hover:bg-slate-300 dark:hover:bg-[#ffffff12] text-slate-600 dark:text-[#eff1f680] transition text-[10px] font-bold">A-</button>
             </div>
           </div>
 
           {/* Editor + TestCase */}
           <div className="flex-1 flex flex-col overflow-hidden">
             <div style={{ height: showConsole ? `${editorHeight}%` : '100%' }} className="overflow-hidden">
-              <Editor beforeMount={handleEditorWillMount} onMount={handleEditorDidMount} height="100%" language={language === 'cpp' ? 'cpp' : language} value={code} onChange={v => setCode(v || '')} theme="vs-dark"
+              <Editor beforeMount={handleEditorWillMount} onMount={handleEditorDidMount} height="100%" language={language === 'cpp' ? 'cpp' : language} value={code} onChange={v => setCode(v || '')} theme={isDark ? 'vs-dark' : 'vs'}
                 options={{ minimap: { enabled: false }, fontSize, fontFamily: "'Fira Code','Consolas',monospace", fontLigatures: true, lineNumbers: 'on', scrollBeyondLastLine: false, automaticLayout: true, padding: { top: 12, bottom: 12 }, tabSize: language === 'python' ? 4 : 2, bracketPairColorization: { enabled: true }, smoothScrolling: true, cursorBlinking: 'smooth', renderLineHighlight: 'line' }}
               />
             </div>
             {showConsole && (
               <>
-                <div className="h-[5px] flex-shrink-0 cursor-row-resize bg-[#1a1a2e] hover:bg-[#ffa11640] active:bg-[#ffa11660] transition-colors" onMouseDown={startVResize} />
+                <div className="h-[5px] flex-shrink-0 cursor-row-resize bg-slate-300 dark:bg-[#1a1a2e] hover:bg-[#ffa11640] active:bg-[#ffa11660] transition-colors" onMouseDown={startVResize} />
                 <div style={{ height: `${100 - editorHeight}%` }} className="overflow-hidden">
                   <TestCasePanel testCases={visibleTestCases} activeCase={activeTestCase} setActiveCase={setActiveTestCase} runResult={runResult} submitResult={submitResult} activeTab={bottomTab} setActiveTab={setBottomTab} customCases={customCases} setCustomCases={setCustomCases} onAddCase={onAddCase} onRemoveCase={onRemoveCase} />
                 </div>
@@ -353,11 +395,11 @@ function LeetCodeEditorInner() {
           </div>
 
           {/* Bottom Bar */}
-          <div className="h-[36px] flex-shrink-0 flex items-center justify-between px-3 bg-[#282828] border-t border-[#3c3c3c]">
-            <button onClick={() => setShowConsole(c => !c)} className="flex items-center gap-1.5 text-xs text-[#eff1f680] hover:text-[#eff1f6] transition">
+          <div className="h-[36px] flex-shrink-0 flex items-center justify-between px-3 bg-slate-200 dark:bg-[#282828] border-t border-slate-300 dark:border-[#3c3c3c]">
+            <button onClick={() => setShowConsole(c => !c)} className="flex items-center gap-1.5 text-xs text-slate-600 dark:text-[#eff1f680] hover:text-slate-800 dark:hover:text-[#eff1f6] transition">
               <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M4 17l6-5-6-5M12 19h8" /></svg>Console
             </button>
-            <div className="text-[10px] text-[#eff1f650]">Ctrl+Enter: Run • Ctrl+Shift+Enter: Submit • ?: Shortcuts</div>
+            <div className="text-[10px] text-slate-500 dark:text-[#eff1f650]">Ctrl+Enter: Run • Ctrl+Shift+Enter: Submit • ?: Shortcuts</div>
           </div>
         </div>
       </div>

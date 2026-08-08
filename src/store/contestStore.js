@@ -139,16 +139,76 @@ export const useContestStore = create((set) => ({
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      set((state) => ({
-        currentContest: state.currentContest?._id === contestId 
-          ? response.data.contest 
-          : state.currentContest,
-        loading: false
-      }));
+      // POST /start returns { message, startedAt, endTime } — not a contest object.
+      // Don't overwrite currentContest here; the caller should re-fetch via getContest().
+      set({ loading: false });
 
       return response.data;
     } catch (error) {
       set({ error: 'Failed to start contest', loading: false });
+      throw error;
+    }
+  },
+
+  // Start virtual contest
+  startVirtualContest: async (contestId) => {
+    try {
+      set({ loading: true, error: null });
+      const token = localStorage.getItem('token');
+      
+      const response = await axios.post(
+        `${API_URL}/virtual-contests/${contestId}/start`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      set({ loading: false });
+      return response.data;
+    } catch (error) {
+      const message = error.response?.data?.message || 'Failed to start virtual contest';
+      set({ error: message, loading: false });
+      throw error;
+    }
+  },
+
+  // Stop virtual contest (keeps record)
+  stopVirtualContest: async (contestId) => {
+    try {
+      set({ loading: true, error: null });
+      const token = localStorage.getItem('token');
+      
+      const response = await axios.post(
+        `${API_URL}/virtual-contests/${contestId}/stop`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      set({ loading: false });
+      return response.data;
+    } catch (error) {
+      const message = error.response?.data?.message || 'Failed to stop virtual contest';
+      set({ error: message, loading: false });
+      throw error;
+    }
+  },
+
+  // Give up virtual contest — deletes all progress (LeetCode-style)
+  giveUpVirtualContest: async (contestId) => {
+    try {
+      set({ loading: true, error: null });
+      const token = localStorage.getItem('token');
+      
+      const response = await axios.post(
+        `${API_URL}/virtual-contests/${contestId}/give-up`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      set({ loading: false });
+      return response.data;
+    } catch (error) {
+      const message = error.response?.data?.message || 'Failed to give up virtual contest';
+      set({ error: message, loading: false });
       throw error;
     }
   },
@@ -174,19 +234,19 @@ export const useContestStore = create((set) => ({
   },
 
   // Get leaderboard
-  getLeaderboard: async (contestId) => {
+  getLeaderboard: async (contestId, params = {}) => {
     try {
-      set({ loading: true, error: null });
       const token = localStorage.getItem('token');
       
-      const response = await axios.get(`${API_URL}/contests/${contestId}/leaderboard`, {
+      const query = new URLSearchParams(params).toString();
+      const response = await axios.get(`${API_URL}/contests/${contestId}/leaderboard?${query}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
 
-      set({ leaderboard: response.data, loading: false });
+      // Return data without setting global state — callers should manage their own local state
+      // to prevent race conditions between pages (e.g., ContestDetail vs Contests page)
       return response.data;
     } catch (error) {
-      set({ error: 'Failed to fetch leaderboard', loading: false });
       throw error;
     }
   },

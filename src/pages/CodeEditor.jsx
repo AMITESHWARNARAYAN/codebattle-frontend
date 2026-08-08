@@ -4,26 +4,10 @@ import { useAuthStore } from '../store/authStore';
 import { useMatchStore } from '../store/matchStore';
 import { useContestStore } from '../store/contestStore';
 import Editor from '@monaco-editor/react';
-import { 
-  submitCodeNotification, 
-  onOpponentSubmitted, 
-  onOpponentGaveUp, 
-  onMatchExpired, 
-  removeListener, 
-  joinMatch, 
-  leaveMatch, 
-  sendChatMessage, 
-  onChatMessage,
-  onOpponentDisconnected,
-  onReconnectCountdown,
-  onOpponentReconnected,
-  onMatchForfeited
-} from '../utils/socket';
+import { submitCodeNotification, onOpponentSubmitted } from '../utils/socket';
 import { toast } from 'react-hot-toast';
 import { TestCasePanel, Confetti } from './leetcode/Panels';
 import { LANGUAGES, DEFAULT_CODE, DIFF_COLORS } from './leetcode/constants';
-import { MessageSquare, Clock, Trophy, Users, Info, Settings, Flag, Plus, RefreshCw, Send, ThumbsUp, ThumbsDown } from 'lucide-react';
-import { useFairnessTracker } from '../hooks/useFairnessTracker';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
@@ -34,14 +18,6 @@ export default function CodeEditor() {
   const contestId = searchParams.get('contest');
   const navigate = useNavigate();
   const editorRef = useRef(null);
-
-  // Initialize fairness tracker for anti-cheat
-  const { suspicionScore } = useFairnessTracker({
-    matchId,
-    contestId,
-    enabled: !!matchId || !!contestId
-  });
-  const feedEndRef = useRef(null);
 
   const { user, token } = useAuthStore();
   const { currentMatch, submitCode, getMatch, giveUp } = useMatchStore();
@@ -63,12 +39,6 @@ export default function CodeEditor() {
   const [showConsole, setShowConsole] = useState(true);
   const [bottomTab, setBottomTab] = useState('testcase');
   const [activeTestCase, setActiveTestCase] = useState(0);
-  const [customCases, setCustomCases] = useState([]);
-
-  // Right Sidebar
-  const [rightTab, setRightTab] = useState('chat');
-  const [chatMessage, setChatMessage] = useState('');
-  const [feedEvents, setFeedEvents] = useState([]);
 
   // Timer
   const [timeLeft, setTimeLeft] = useState(600);
@@ -83,67 +53,34 @@ export default function CodeEditor() {
 
   // Match state
   const [opponentSubmitted, setOpponentSubmitted] = useState(false);
-  const [opponentDisconnected, setOpponentDisconnected] = useState(false);
-  const [reconnectSecondsLeft, setReconnectSecondsLeft] = useState(30);
 
   // Fetch match data
   useEffect(() => {
-    const fetchMatch = async () => {
-      try {
-        setLoading(true);
-        const data = await getMatch(matchId);
-        setMatch(data);
-        if (data.problem) {
+    if (matchId && !match) {
+      (async () => {
+        try {
+          const data = await getMatch(matchId);
+          setMatch(data);
           setProblem(data.problem);
-        }
-      } catch (err) {
-        console.error('Match fetch error:', err);
-        toast.error('Failed to load match');
-        navigate('/');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    const fetchProblem = async () => {
-      try {
-        setLoading(true);
-        const res = await fetch(`${API_URL}/problems/${paramProblemId}`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        if (!res.ok) throw new Error();
-        const data = await res.json();
-        setProblem(data);
-      } catch (err) {
-        console.error('Problem fetch error:', err);
-        toast.error('Failed to load problem');
-        navigate('/');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    if (matchId) {
-      // If we don't have a match or it's the wrong match, fetch it
-      if (!match || match._id !== matchId) {
-        fetchMatch();
-      } else {
-        // We have the right match, ensure problem is set
-        if (match.problem && !problem) {
-          setProblem(match.problem);
-        }
-        setLoading(false);
-      }
-    } else if (paramProblemId) {
-      if (!problem || (problem._id !== paramProblemId && problem.id !== paramProblemId)) {
-        fetchProblem();
-      } else {
-        setLoading(false);
-      }
+        } catch { toast.error('Failed to load match'); navigate('/'); }
+        finally { setLoading(false); }
+      })();
+    } else if (paramProblemId && !problem) {
+      (async () => {
+        try {
+          const res = await fetch(`${API_URL}/problems/${paramProblemId}`, { headers: { Authorization: `Bearer ${token}` } });
+          if (!res.ok) throw new Error();
+          setProblem(await res.json());
+        } catch { toast.error('Failed to load problem'); navigate('/'); }
+        finally { setLoading(false); }
+      })();
+    } else if (match || problem) {
+      setLoading(false);
+      if (match?.problem && !problem) setProblem(match.problem);
     } else {
       setLoading(false);
     }
-  }, [matchId, paramProblemId, token]);
+  }, [matchId, paramProblemId]);
 
   // Pre-fill code
   useEffect(() => {
@@ -173,96 +110,10 @@ export default function CodeEditor() {
     return () => clearInterval(t);
   }, []);
 
-  // Opponent socket & chat
+  // Opponent socket
   useEffect(() => {
-    if (matchId) {
-      joinMatch(matchId);
-    }
-
-    const handleOpponentSubmitted = (data) => { 
-      setOpponentSubmitted(true); 
-      toast.success(`${data.username} submitted!`);
-      setFeedEvents(prev => [...prev, { type: 'system', message: `${data.username} submitted their code.` }]);
-    };
-    
-    const handleOpponentGaveUp = (data) => {
-      if (data.userId === user?._id) return;
-      setFeedEvents(prev => [...prev, { type: 'system', message: 'Opponent gave up. Match aborted.' }]);
-      toast.success('Your opponent gave up! You win!', { duration: 5000 });
-      setTimeout(() => navigate(`/results/${matchId}`), 2000);
-    };
-
-    const handleChatMessage = (data) => {
-      setFeedEvents(prev => [...prev, data]);
-    };
-
-    const handleMatchExpired = (data) => {
-      if (data.status === 'cancelled') {
-        toast.error('Match expired — neither player submitted. No rating change.', { duration: 5000 });
-      } else {
-        toast.success('Match time expired! Results are ready.', { duration: 5000 });
-      }
-      setTimeout(() => navigate(`/results/${matchId}`), 2000);
-    };
-
-    const handleOpponentDisconnected = (data) => {
-      setOpponentDisconnected(true);
-      setReconnectSecondsLeft(30);
-      toast.error('Opponent disconnected! 30s forfeit countdown started.');
-      setFeedEvents(prev => [...prev, { type: 'system', message: 'Opponent disconnected. 30s forfeit countdown started.' }]);
-    };
-
-    const handleReconnectCountdown = (data) => {
-      setReconnectSecondsLeft(data.secondsLeft);
-    };
-
-    const handleOpponentReconnected = (data) => {
-      setOpponentDisconnected(false);
-      toast.success('Opponent reconnected!');
-      setFeedEvents(prev => [...prev, { type: 'system', message: 'Opponent reconnected.' }]);
-    };
-
-    const handleMatchForfeited = (data) => {
-      setOpponentDisconnected(false);
-      if (data.winnerId === user?._id) {
-        toast.success('Opponent forfeited! You win by default!');
-      } else {
-        toast.error('Match forfeited due to disconnection!');
-      }
-      setFeedEvents(prev => [...prev, { type: 'system', message: 'Match completed by forfeit.' }]);
-      setTimeout(() => navigate(`/results/${matchId}`), 2000);
-    };
-
-    onOpponentSubmitted(handleOpponentSubmitted);
-    onOpponentGaveUp(handleOpponentGaveUp);
-    onMatchExpired(handleMatchExpired);
-    onChatMessage(handleChatMessage);
-    onOpponentDisconnected(handleOpponentDisconnected);
-    onReconnectCountdown(handleReconnectCountdown);
-    onOpponentReconnected(handleOpponentReconnected);
-    onMatchForfeited(handleMatchForfeited);
-
-    return () => {
-      removeListener('opponent-submitted', handleOpponentSubmitted);
-      removeListener('opponent-gave-up', handleOpponentGaveUp);
-      removeListener('match-expired', handleMatchExpired);
-      removeListener('receive-chat-message', handleChatMessage);
-      removeListener('opponent-disconnected', handleOpponentDisconnected);
-      removeListener('reconnect-countdown', handleReconnectCountdown);
-      removeListener('opponent-reconnected', handleOpponentReconnected);
-      removeListener('match-forfeited', handleMatchForfeited);
-      if (matchId) {
-        leaveMatch(matchId);
-      }
-    };
-  }, [matchId, navigate, user]);
-
-  // Auto-scroll chat feed
-  useEffect(() => {
-    if (feedEndRef.current) {
-      feedEndRef.current.scrollIntoView({ behavior: 'smooth' });
-    }
-  }, [feedEvents, rightTab]);
+    onOpponentSubmitted((data) => { setOpponentSubmitted(true); toast.success(`${data.username} submitted!`); });
+  }, []);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -271,7 +122,7 @@ export default function CodeEditor() {
     };
     window.addEventListener('keydown', h);
     return () => window.removeEventListener('keydown', h);
-  }, [code, language, running, submitting, customCases]);
+  }, [code, language, running, submitting]);
 
   const handleRun = async () => {
     if (running || submitting || !code.trim() || code.trim().length < 5) { toast.error('Code too short'); return; }
@@ -279,7 +130,7 @@ export default function CodeEditor() {
     try {
       const res = await fetch(`${API_URL}/judge/run-batch`, {
         method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ code, language, problemId: problem?._id || problemId, customCases })
+        body: JSON.stringify({ code, language, problemId: problem?._id || problemId })
       });
       if (!res.ok) { const e = await res.json(); throw new Error(e.message); }
       const r = await res.json();
@@ -318,9 +169,6 @@ export default function CodeEditor() {
   };
 
   const handleReset = () => { if (confirm('Reset code?')) setCode(problem?.functionSignature?.[language] || DEFAULT_CODE[language]); };
-
-  const onAddCase = () => { setCustomCases(c => [...c, { input: '', expectedOutput: '' }]); setActiveTestCase((problem?.testCases?.filter(t => !t.isHidden)?.length || 0) + customCases.length); };
-  const onRemoveCase = (i) => { setCustomCases(c => c.filter((_, j) => j !== i)); setActiveTestCase(0); };
 
   const startHResize = (e) => {
     const startX = e.clientX, startW = leftWidth;
@@ -390,7 +238,14 @@ export default function CodeEditor() {
           </div>
         )}
 
-        <button onClick={handleRun} disabled={running || submitting} className="h-[30px] px-3.5 rounded-lg text-xs font-medium border border-[#404040] text-[#eff1f6] hover:bg-[#ffffff12] disabled:opacity-40 transition flex items-center gap-1.5 mr-1">
+        {/* Give Up (vs modes only) */}
+        {isVs && (
+          <button onClick={handleGiveUp} className="h-[30px] px-3 rounded-lg text-xs font-medium border border-[#ef474340] text-[#ef4743] hover:bg-[#ef474315] transition mr-1">
+            Give Up
+          </button>
+        )}
+
+        <button onClick={handleRun} disabled={running || submitting} className="h-[30px] px-3.5 rounded-lg text-xs font-medium border border-[#404040] text-[#eff1f6] hover:bg-[#ffffff12] disabled:opacity-40 transition flex items-center gap-1.5">
           {running ? <div className="w-3 h-3 border border-[#eff1f680] border-t-white rounded-full animate-spin"/> : <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>}Run
         </button>
         <button onClick={handleSubmit} disabled={running || submitting} className="h-[30px] px-3.5 rounded-lg text-xs font-medium bg-[#2cbb5d] text-white hover:bg-[#26a651] disabled:opacity-40 transition flex items-center gap-1.5">
@@ -400,30 +255,14 @@ export default function CodeEditor() {
 
       {/* MAIN */}
       <div className="flex-1 flex overflow-hidden">
-        {/* MATCH AREA (Left) */}
-        <div className="flex-1 flex flex-col overflow-hidden relative">
-          {opponentDisconnected && (
-            <div className="absolute top-4 right-4 z-50 max-w-sm w-full bg-slate-900/95 border-2 border-rose-500/80 rounded-2xl p-4 shadow-[0_0_30px_rgba(244,63,94,0.4)] backdrop-blur-md flex items-start gap-4">
-              <div className="w-10 h-10 rounded-full bg-rose-500/20 flex items-center justify-center flex-shrink-0 animate-pulse border border-rose-500/30">
-                <span className="text-xl font-bold text-rose-500 font-mono">{reconnectSecondsLeft}</span>
-              </div>
-              <div className="flex-1">
-                <h4 className="text-sm font-bold text-rose-400">Opponent Disconnected</h4>
-                <p className="text-xs text-slate-300 mt-1 leading-relaxed">
-                  {opponent?.username || 'Opponent'} left. Reconnection window: <span className="font-bold text-rose-400 font-mono">{reconnectSecondsLeft}s</span> before they forfeit.
-                </p>
-              </div>
-            </div>
-          )}
-          <div className="flex-1 flex overflow-hidden">
-            {/* LEFT - Problem Description */}
-            <div className="flex flex-col overflow-hidden bg-[#282828]" style={{ width: `${leftWidth}%` }}>
+        {/* LEFT - Problem Description */}
+        <div className="flex flex-col overflow-hidden bg-[#282828]" style={{ width: `${leftWidth}%` }}>
           <div className="flex-1 overflow-y-auto p-5 space-y-5 text-sm lc-scroll">
             <div>
               <h1 className="text-xl font-semibold mb-1">{problem.title}</h1>
               <span className="text-sm font-medium" style={{ color: DIFF_COLORS[problem.difficulty] }}>{problem.difficulty}</span>
             </div>
-            <div className="text-[#eff1f6cc] leading-relaxed description-content dark-desc" dangerouslySetInnerHTML={{ __html: problem.description }} />
+            <div className="text-[#eff1f6cc] leading-relaxed whitespace-pre-wrap">{problem.description}</div>
 
             {(problem.examples || []).map((ex, i) => (
               <div key={i} className="space-y-2">
@@ -486,7 +325,7 @@ export default function CodeEditor() {
               <>
                 <div className="h-[5px] flex-shrink-0 cursor-row-resize bg-[#1a1a2e] hover:bg-[#ffa11640] active:bg-[#ffa11660] transition-colors" onMouseDown={startVResize} />
                 <div style={{ height: `${100 - editorHeight}%` }} className="overflow-hidden">
-                  <TestCasePanel testCases={visibleTestCases} activeCase={activeTestCase} setActiveCase={setActiveTestCase} runResult={runResult} submitResult={submitResult} activeTab={bottomTab} setActiveTab={setBottomTab} customCases={customCases} setCustomCases={setCustomCases} onAddCase={onAddCase} onRemoveCase={onRemoveCase} />
+                  <TestCasePanel testCases={visibleTestCases} activeCase={activeTestCase} setActiveCase={setActiveTestCase} runResult={runResult} submitResult={submitResult} activeTab={bottomTab} setActiveTab={setBottomTab} customCases={[]} setCustomCases={() => {}} onAddCase={() => {}} onRemoveCase={() => {}} />
                 </div>
               </>
             )}
@@ -499,143 +338,6 @@ export default function CodeEditor() {
             <div className="text-[10px] text-[#eff1f650]">Ctrl+Enter: Run • Ctrl+Shift+Enter: Submit</div>
           </div>
         </div>
-          </div>
-        </div>
-
-        {/* RIGHT SIDEBAR (Chess.com style) */}
-        <div className="w-[320px] flex-shrink-0 bg-[#21201D] border-l border-[#3c3c3c] flex flex-col z-10 font-sans shadow-xl">
-          {/* Top Tabs */}
-          <div className="flex border-b border-[#3c3c3c] bg-[#1B1A17]">
-            <button onClick={() => setRightTab('chat')} className={`flex-1 py-3 text-xs font-semibold flex flex-col items-center justify-center gap-1.5 transition ${rightTab === 'chat' ? 'bg-[#262421] text-white border-t-2 border-[#2cbb5d]' : 'text-[#888] hover:text-white hover:bg-[#ffffff05] border-t-2 border-transparent'}`}>
-              <MessageSquare className="w-4 h-4" />
-              Chat
-            </button>
-            <button onClick={() => setRightTab('info')} className={`flex-1 py-3 text-xs font-semibold flex flex-col items-center justify-center gap-1.5 transition ${rightTab === 'info' ? 'bg-[#262421] text-white border-t-2 border-[#2cbb5d]' : 'text-[#888] hover:text-white hover:bg-[#ffffff05] border-t-2 border-transparent'}`}>
-              <Info className="w-4 h-4" />
-              Info
-            </button>
-            <button onClick={() => setRightTab('players')} className={`flex-1 py-3 text-xs font-semibold flex flex-col items-center justify-center gap-1.5 transition ${rightTab === 'players' ? 'bg-[#262421] text-white border-t-2 border-[#2cbb5d]' : 'text-[#888] hover:text-white hover:bg-[#ffffff05] border-t-2 border-transparent'}`}>
-              <Users className="w-4 h-4" />
-              Players
-            </button>
-          </div>
-
-          {/* Tab Content */}
-          <div className="flex-1 overflow-y-auto bg-[#262421] p-3 flex flex-col gap-3 custom-scrollbar">
-            {rightTab === 'chat' && (
-              <>
-                <div className="bg-[#1B1A17] p-3 rounded-lg border border-[#3c3c3c] text-center shadow-sm">
-                  <p className="text-[11px] font-bold text-[#888] tracking-widest uppercase mb-1">New Game</p>
-                  <p className="text-sm font-semibold text-white">{user.username} vs {opponent?.username || 'Opponent'}</p>
-                  <p className="text-[11px] text-[#888] mt-1">
-                    {matchType === 'matchmaking' ? 'Ranked Match' : matchType === 'friend' ? 'Friend Match' : 'Solo Practice'}
-                  </p>
-                </div>
-
-                {feedEvents.map((ev, i) => {
-                  if (ev.type === 'system') {
-                    return (
-                      <div key={i} className="text-[#888] text-center my-2 text-xs italic bg-[#1B1A17] py-1 px-3 rounded-full w-fit mx-auto border border-[#3c3c3c]">
-                        {ev.message}
-                      </div>
-                    );
-                  }
-                  
-                  const isMe = ev.sender === user.username;
-                  return (
-                    <div key={i} className={`flex ${isMe ? 'justify-end' : 'justify-start'} w-full`}>
-                      <div className={`max-w-[85%] rounded-2xl px-3 py-1.5 text-sm shadow-sm flex flex-col ${
-                        isMe 
-                          ? 'bg-[#005c4b] text-[#e9edef] rounded-tr-sm' 
-                          : 'bg-[#202c33] text-[#e9edef] rounded-tl-sm'
-                      }`}>
-                        {!isMe && <span className="text-[10px] font-bold text-[#8696a0] mb-0.5">{ev.sender}</span>}
-                        <span className="break-words leading-relaxed">{ev.message}</span>
-                      </div>
-                    </div>
-                  );
-                })}
-                <div ref={feedEndRef} />
-              </>
-            )}
-            
-            {rightTab === 'info' && (
-              <div className="text-center text-[#888] text-xs py-4">
-                Match ID: <br/><span className="font-mono text-white select-all">{matchId}</span>
-              </div>
-            )}
-
-            {rightTab === 'players' && (
-              <div className="flex flex-col gap-3">
-                <div className="bg-[#1B1A17] p-3 rounded flex items-center gap-3 border border-[#3c3c3c]">
-                  <div className="w-8 h-8 bg-indigo-600 rounded flex items-center justify-center font-bold text-white uppercase">{user.username[0]}</div>
-                  <div>
-                    <p className="text-sm font-semibold text-white">{user.username}</p>
-                    <p className="text-xs text-[#888]">You</p>
-                  </div>
-                </div>
-                {opponent && (
-                  <div className="bg-[#1B1A17] p-3 rounded flex items-center gap-3 border border-[#3c3c3c]">
-                    <div className="w-8 h-8 bg-rose-600 rounded flex items-center justify-center font-bold text-white uppercase">{opponent.username[0]}</div>
-                    <div>
-                      <p className="text-sm font-semibold text-white">{opponent.username}</p>
-                      <p className="text-xs text-[#888]">Opponent</p>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-
-          {/* Chat Input */}
-          <div className="p-3 bg-[#1B1A17] border-t border-[#3c3c3c]">
-            <div className="relative">
-              <input 
-                type="text" 
-                placeholder="Send a message..." 
-                value={chatMessage}
-                onChange={(e) => setChatMessage(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && chatMessage.trim()) {
-                    setFeedEvents(prev => [...prev, { type: 'chat', sender: user.username, message: chatMessage }]);
-                    sendChatMessage(matchId, user.username, chatMessage);
-                    setChatMessage('');
-                  }
-                }}
-                className="w-full bg-[#262421] border border-[#3c3c3c] rounded-md pl-3 pr-10 py-2 text-sm text-white placeholder-[#888] focus:outline-none focus:border-[#555] transition" 
-              />
-              <button 
-                className="absolute right-2 top-2 p-0.5 text-[#888] hover:text-white transition rounded"
-                onClick={() => {
-                  if (chatMessage.trim()) {
-                    setFeedEvents(prev => [...prev, { type: 'chat', sender: user.username, message: chatMessage }]);
-                    sendChatMessage(matchId, user.username, chatMessage);
-                    setChatMessage('');
-                  }
-                }}
-              >
-                <Send className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
-
-          {/* Bottom Controls */}
-          <div className="flex items-center justify-between p-3 bg-[#1B1A17] border-t border-[#3c3c3c]">
-            <div className="flex gap-2">
-              <button className="p-2 bg-[#262421] hover:bg-[#333] border border-[#3c3c3c] rounded text-[#888] hover:text-white transition shadow-sm" title="New Match"><Plus className="w-4 h-4" /></button>
-              <button className="p-2 bg-[#262421] hover:bg-[#333] border border-[#3c3c3c] rounded text-[#888] hover:text-white transition shadow-sm" title="Refresh Match State"><RefreshCw className="w-4 h-4" /></button>
-            </div>
-            <div className="flex items-center gap-3">
-              {isVs && (
-                <button onClick={handleGiveUp} className="text-[#ef4743] hover:text-[#ff6b68] flex items-center gap-1 text-xs font-semibold uppercase tracking-wider transition" title="Give Up">
-                  <Flag className="w-4 h-4" /> Resign
-                </button>
-              )}
-              <button className="text-[#888] hover:text-white transition ml-2"><Settings className="w-4 h-4" /></button>
-            </div>
-          </div>
-        </div>
-
       </div>
 
       <style>{`.lc-scroll::-webkit-scrollbar{width:6px}.lc-scroll::-webkit-scrollbar-track{background:transparent}.lc-scroll::-webkit-scrollbar-thumb{background:#ffffff20;border-radius:3px}`}</style>

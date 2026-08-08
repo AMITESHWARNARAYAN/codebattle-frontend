@@ -153,6 +153,11 @@ export const onMatchForfeited = (callback) => {
   if (socket) socket.on('match-forfeited', callback);
 };
 
+export const onMatchCompleted = (callback) => {
+  const socket = getSocket();
+  if (socket) socket.on('match-completed', callback);
+};
+
 // Contest events
 export const joinContestRoom = (contestId) => {
   const socket = getSocket();
@@ -245,8 +250,23 @@ export const removeListener = (event, callback) => {
   }
 };
 
+// List of application-level events that are safe to remove.
+// Core socket lifecycle events (connect, disconnect, connect_error, error) are NOT included
+// to prevent breaking reconnection and error handling.
+const APP_EVENTS = [
+  'queue-joined', 'queue-update', 'match-found', 'queue-left',
+  'opponent-submitted', 'opponent-gave-up', 'match-expired',
+  'opponent-disconnected', 'reconnect-countdown', 'opponent-reconnected',
+  'match-forfeited', 'match-completed', 'contest-update',
+  'receive-chat-message', 'notification',
+  'challenge-received', 'challenge-accepted', 'challenge-rejected'
+];
+
 export const removeAllListeners = () => {
   const socket = getSocket();
-  if (socket) socket.removeAllListeners();
+  if (socket) {
+    // Only remove app-level listeners — preserve core socket lifecycle handlers
+    APP_EVENTS.forEach(event => socket.off(event));
+  }
 };
 

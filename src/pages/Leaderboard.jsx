@@ -1,14 +1,25 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useUserStore } from '../store/userStore';
+import { useAuthStore } from '../store/authStore';
 import { Trophy, ArrowLeft } from 'lucide-react';
-import ThemeToggle from '../components/ThemeToggle';
+import GuestHeader from '../components/GuestHeader';
 import { toast } from 'react-hot-toast';
+
+import { useRequireAuth } from '../contexts/AuthGuardContext';
 
 export default function Leaderboard() {
   const navigate = useNavigate();
+  const requireAuth = useRequireAuth();
+  const { token, user } = useAuthStore();
   const { getLeaderboard, leaderboard, loading } = useUserStore();
   const [limit, setLimit] = useState(100);
+
+  const handleUserClick = (username) => {
+    if (!username) return;
+    if (!requireAuth(null, 'Sign in to View User Profiles', 'Create a free CodeBattle account or sign in to view user profiles, ratings, and match history.')) return;
+    navigate(`/profile/${username}`);
+  };
 
   useEffect(() => {
     const fetchLeaderboard = async () => {
@@ -40,7 +51,7 @@ export default function Leaderboard() {
               Global Leaderboard
             </h1>
           </div>
-          <ThemeToggle />
+          <GuestHeader />
         </div>
       </header>
 
@@ -71,7 +82,7 @@ export default function Leaderboard() {
                   {leaderboard.map((player, idx) => (
                     <tr
                       key={idx}
-                      onClick={() => navigate(`/profile/${player.username}`)}
+                      onClick={() => handleUserClick(player.username)}
                       className="border-b border-gray-200 dark:border-dark-800 hover:bg-gray-50 dark:hover:bg-dark-800 transition cursor-pointer"
                     >
                       <td className="px-6 py-4">

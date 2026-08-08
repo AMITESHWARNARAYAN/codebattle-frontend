@@ -253,9 +253,8 @@ code {
   color: #cbd5e1;
 }
 
-/* Force all text inside dark problem description containers to be white/off-white */
-.dark-desc,
-.dark-desc *,
+.dark .dark-desc,
+.dark .dark-desc *,
 .dark .description-content,
 .dark .description-content * {
   color: #ffffff !important;

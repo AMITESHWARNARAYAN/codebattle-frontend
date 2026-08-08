@@ -4,13 +4,13 @@ import { useAuthStore } from '../store/authStore';
 import axios from 'axios';
 import { ChevronLeft, Search, ChevronDown, ChevronUp, Building2, ListChecks, CheckCircle2, Code2, X, Award, Circle, Flame, Tag, ChevronRight } from 'lucide-react';
 import { toast } from 'react-hot-toast';
-import ThemeToggle from '../components/ThemeToggle';
+import GuestHeader from '../components/GuestHeader';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 export default function Problems() {
   const navigate = useNavigate();
-  const { user } = useAuthStore();
+  const { user, token } = useAuthStore();
   const [problems, setProblems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -119,12 +119,7 @@ export default function Problems() {
               <h1 className="text-xl font-semibold text-gray-900 dark:text-white">Practice Problems</h1>
             </div>
           </div>
-          <div className="flex items-center gap-3">
-            <ThemeToggle />
-            <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-100 dark:bg-dark-800 rounded-lg border border-gray-200 dark:border-dark-700">
-              <span className="text-gray-700 dark:text-gray-300 font-medium text-sm">{user?.username}</span>
-            </div>
-          </div>
+          <GuestHeader />
         </div>
       </header>
 

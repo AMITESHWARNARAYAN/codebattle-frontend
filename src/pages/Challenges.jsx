@@ -4,54 +4,49 @@ import { useAuthStore } from '../store/authStore';
 import axios from 'axios';
 import { toast } from 'react-hot-toast';
 import { Trophy, Calendar, Users, Clock, ArrowLeft, Play, CheckCircle } from 'lucide-react';
-import ThemeToggle from '../components/ThemeToggle';
+import GuestHeader from '../components/GuestHeader';
+import { useRequireAuth } from '../contexts/AuthGuardContext';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 export default function Challenges() {
   const navigate = useNavigate();
-  const { user } = useAuthStore();
+  const { user, token } = useAuthStore();
   const [activeChallenges, setActiveChallenges] = useState([]);
   const [upcomingChallenges, setUpcomingChallenges] = useState([]);
   const [completedChallenges, setCompletedChallenges] = useState([]);
   const [activeTab, setActiveTab] = useState('active');
   const [loading, setLoading] = useState(true);
+  const requireAuth = useRequireAuth();
 
   useEffect(() => {
     fetchChallenges();
-  }, []);
+  }, [token]);
 
   const fetchChallenges = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('token');
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
       
       const [activeRes, upcomingRes, completedRes] = await Promise.all([
-        axios.get(`${API_URL}/challenges`, {
-          headers: { Authorization: `Bearer ${token}` }
-        }),
-        axios.get(`${API_URL}/challenges/upcoming`, {
-          headers: { Authorization: `Bearer ${token}` }
-        }),
-        axios.get(`${API_URL}/challenges/completed`, {
-          headers: { Authorization: `Bearer ${token}` }
-        })
+        axios.get(`${API_URL}/challenges`, { headers }),
+        axios.get(`${API_URL}/challenges/upcoming`, { headers }),
+        axios.get(`${API_URL}/challenges/completed`, { headers })
       ]);
 
-      setActiveChallenges(activeRes.data);
-      setUpcomingChallenges(upcomingRes.data);
-      setCompletedChallenges(completedRes.data);
+      setActiveChallenges(activeRes.data || []);
+      setUpcomingChallenges(upcomingRes.data || []);
+      setCompletedChallenges(completedRes.data || []);
     } catch (error) {
       console.error('Fetch challenges error:', error);
-      toast.error('Failed to load challenges');
     } finally {
       setLoading(false);
     }
   };
 
   const handleStartChallenge = async (challengeId) => {
+    if (!requireAuth(null, 'Sign in to Take Challenges', 'Create a free CodeBattle account or sign in to complete admin challenges, earn reward points, and claim badges.')) return;
     try {
-      const token = localStorage.getItem('token');
       const response = await axios.post(
         `${API_URL}/challenges/${challengeId}/start`,
         {},
@@ -59,7 +54,6 @@ export default function Challenges() {
       );
       
       toast.success('Challenge started!');
-      // Navigate to solo practice with the problem
       navigate(`/match/solo?problemId=${response.data.problemId}&challengeId=${challengeId}`);
     } catch (error) {
       toast.error(error.response?.data?.message || 'Failed to start challenge');
@@ -169,28 +163,22 @@ export default function Challenges() {
   );
 
   return (
-    <div className="min-h-screen bg-slate-950">
-      {/* Header */}
-      <header className="glass border-b border-slate-700 px-6 py-4">
+    <div className="min-h-screen bg-white dark:bg-slate-950 text-slate-900 dark:text-white transition-colors">
+      <header className="glass border-b border-gray-200 dark:border-slate-700 px-6 py-4">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-4">
             <button
               onClick={() => navigate('/')}
-              className="p-2 hover:bg-slate-800 rounded-lg transition"
+              className="p-2 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg transition"
             >
-              <ArrowLeft className="w-5 h-5" />
+              <ArrowLeft className="w-5 h-5 text-gray-700 dark:text-gray-300" />
             </button>
             <div>
               <h1 className="text-2xl font-bold gradient-text">Challenges</h1>
               <p className="text-sm text-slate-400">Complete challenges to earn rewards</p>
             </div>
           </div>
-          <div className="flex items-center gap-3">
-            <ThemeToggle />
-            <div className="text-sm text-slate-400">
-              Welcome, {user?.username}
-            </div>
-          </div>
+          <GuestHeader />
         </div>
       </header>
 

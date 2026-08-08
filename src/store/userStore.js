@@ -9,11 +9,11 @@ export const useUserStore = create((set) => ({
   loading: false,
   error: null,
 
-  getLeaderboard: async (limit = 100) => {
+  getLeaderboard: async (limit = 100, sortBy = 'battle') => {
     set({ loading: true, error: null });
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get(`${API_URL}/users/leaderboard?limit=${limit}`, {
+      const response = await axios.get(`${API_URL}/users/leaderboard?limit=${limit}&sortBy=${sortBy}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       set({ leaderboard: response.data, loading: false });

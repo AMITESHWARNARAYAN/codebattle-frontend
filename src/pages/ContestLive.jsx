@@ -7,6 +7,7 @@ import { Trophy, Clock, CheckCircle, XCircle, ArrowLeft, ChevronRight, Play, Upl
 import toast from 'react-hot-toast';
 import { useFairnessTracker } from '../hooks/useFairnessTracker';
 import { joinContestRoom, leaveContestRoom, onContestUpdate, removeListener } from '../utils/socket';
+import { useThemeStore } from '../store/themeStore';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 const LANGUAGES = [
@@ -26,7 +27,11 @@ export default function ContestLive() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { token } = useAuthStore();
-  const { currentContest, getContest, startContest, registerForContest } = useContestStore();
+  const { isDark, toggleTheme } = useThemeStore();
+  const { currentContest, getContest, startContest, registerForContest, stopVirtualContest, giveUpVirtualContest } = useContestStore();
+
+  const participant = currentContest?.userData;
+  const isVirtual = !!participant?.isVirtual;
 
   const [timeRemaining, setTimeRemaining] = useState(null);
   const [hasStarted, setHasStarted] = useState(false);
@@ -62,6 +67,13 @@ export default function ContestLive() {
   useEffect(() => { loadContest(); }, [loadContest]);
 
   // Real-time Contest Updates
+  const currentContestRef = useRef(currentContest);
+  currentContestRef.current = currentContest;
+
+  // Refs for stable keyboard shortcut handlers (avoids stale closures)
+  const handleRunRef = useRef(null);
+  const handleSubmitRef = useRef(null);
+
   useEffect(() => {
     if (id) {
       joinContestRoom(id);
@@ -69,7 +81,7 @@ export default function ContestLive() {
       const handleContestUpdate = (data) => {
         if (data.type === 'submission' && data.status === 'accepted') {
           // Play a tiny subtle sound or just toast
-          if (data.userId !== currentContest?.userData?.user) {
+          if (data.userId !== currentContestRef.current?.userData?.user) {
             toast(`${data.username} solved a problem! ${data.isFirstToSolve ? '🔥 First to solve!' : ''}`, {
               icon: '🚀',
               position: 'bottom-right'
@@ -87,37 +99,61 @@ export default function ContestLive() {
         leaveContestRoom(id);
       };
     }
-  }, [id, loadContest, currentContest]);
+  }, [id, loadContest]);
 
-  // Global timer
+  // Global / Virtual timer countdown
   useEffect(() => {
-    if (!currentContest?.endTime) return;
+    if (loading || !currentContest) return;
+
+    const participant = currentContest?.userData;
+    // Use explicit isVirtual flag from the DB, not fragile time-based detection
+    const isVirtual = !!participant?.isVirtual;
+    const endTimeSource = isVirtual
+      ? new Date(new Date(participant.startedAt).getTime() + currentContest.duration * 60000)
+      : (currentContest?.endTime ? new Date(currentContest.endTime) : null);
+
+    if (participant?.endedAt) {
+      setTimeRemaining(0);
+      setIsOver(true);
+      return;
+    }
+
+    if (!endTimeSource || isNaN(endTimeSource.getTime())) return;
+
     const tick = () => {
-      const r = Math.max(0, new Date(currentContest.endTime) - new Date());
+      const now = new Date();
+      const r = Math.max(0, endTimeSource - now);
       setTimeRemaining(r);
-      if (r === 0 && !isOver) { setIsOver(true); toast.error('⏰ Contest time is up!'); }
+      if (r === 0 && !isOver) { 
+        setIsOver(true); 
+        toast.error('⏰ Contest time is up!'); 
+      }
     };
     tick();
     const iv = setInterval(tick, 1000);
     return () => clearInterval(iv);
-  }, [currentContest?.endTime, isOver]);
+  }, [currentContest, isOver, loading]);
 
   // Check started
   useEffect(() => {
     if (currentContest?.userData?.startedAt) setHasStarted(true);
   }, [currentContest]);
 
-  // Keyboard shortcuts
+  // Keyboard shortcuts (use refs to avoid stale closures)
   useEffect(() => {
     const handler = (e) => {
       if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
         e.preventDefault();
-        e.shiftKey ? handleSubmit() : handleRun();
+        if (e.shiftKey) {
+          handleSubmitRef.current?.();
+        } else {
+          handleRunRef.current?.();
+        }
       }
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [code, language, selectedIdx, running, submitting]);
+  }, []); // Empty deps — refs always point to latest handlers
 
   // Load code for selected problem
   useEffect(() => {
@@ -139,6 +175,13 @@ export default function ContestLive() {
 
   const handleEnter = async () => {
     try {
+      // For virtual participants on finished contests, they already started via /virtual-contests/:id/start
+      // Just mark as started and reload — don't call startContest which requires 'running' status
+      if (currentContest?.status === 'finished' && currentContest?.userData?.isVirtual) {
+        setHasStarted(true);
+        loadContest();
+        return;
+      }
       if (!currentContest?.isRegistered) await registerForContest(id);
       await startContest(id);
       setHasStarted(true);
@@ -167,6 +210,8 @@ export default function ContestLive() {
     } catch (e) { toast.error(e.message); setRunResult({ status: e.message, outputs: [], errors: [e.message] }); }
     finally { setRunning(false); }
   };
+  // Keep ref in sync
+  handleRunRef.current = handleRun;
 
   const handleSubmit = async () => {
     if (running || submitting || !currentProblem) return;
@@ -181,13 +226,32 @@ export default function ContestLive() {
       if (!res.ok) throw new Error(r.message);
       setSubmitResult(r);
       if (r.status === 'accepted') {
-        toast.success(`✓ Accepted! Score: ${r.totalScore} | Rank: #${r.rank}`);
+        if (isVirtual) {
+          toast.success(`✓ Accepted! Score: ${r.totalScore}`);
+        } else {
+          toast.success(`✓ Accepted! Score: ${r.totalScore} | Rank: #${r.rank}`);
+        }
       } else {
         toast.error(`✗ ${r.status}: ${r.executionResult?.testCasesPassed}/${r.executionResult?.totalTestCases} passed`);
       }
       loadContest(); // Refresh to get updated userData
     } catch (e) { toast.error(e.message); }
     finally { setSubmitting(false); }
+  };
+  // Keep ref in sync
+  handleSubmitRef.current = handleSubmit;
+
+  // LeetCode-style "Give Up": deletes your entire virtual record
+  const handleGiveUp = async () => {
+    if (window.confirm("Are you sure you want to give up? All your progress will be deleted and cannot be recovered.")) {
+      try {
+        await giveUpVirtualContest(id);
+        toast.success("Virtual contest abandoned.");
+        navigate(`/contests/${id}`);
+      } catch (e) {
+        toast.error(e.response?.data?.message || 'Failed to give up');
+      }
+    }
   };
 
   const getProblemStatus = (pid) => {
@@ -229,33 +293,78 @@ export default function ContestLive() {
     </div>
   );
 
-  // Contest finished
-  if (currentContest.status === 'finished' || isOver) return (
-    <div className="h-screen bg-[#1a1a2e] flex items-center justify-center text-white">
-      <div className="text-center">
+  // participant and isVirtual are defined at the top of the component
+  const personalEndTime = isVirtual ? new Date(new Date(participant.startedAt).getTime() + currentContest.duration * 60000) : null;
+  const isVirtualOver = isVirtual && (new Date() >= personalEndTime || !!participant?.endedAt);
 
-        <h2 className="text-2xl font-bold mb-2">Contest Ended</h2>
-        <p className="text-[#eff1f680] mb-6">Check the leaderboard for final results</p>
-        <div className="flex gap-4 justify-center">
-          <button onClick={() => navigate(`/contests/${id}`)} className="px-5 py-2.5 bg-[#ffa116] text-black rounded-lg font-medium text-sm">View Results</button>
-          <button onClick={() => navigate('/contests')} className="px-5 py-2.5 border border-[#3c3c3c] text-[#eff1f6] rounded-lg text-sm">Back to Contests</button>
+  // Contest finished screen triggers if:
+  // 1. Contest status is finished AND user is NOT a virtual participant, OR
+  // 2. User IS virtual but their virtual session has expired/ended
+  const isContestFinishedScreen = (currentContest.status === 'finished' && !isVirtual) || isVirtualOver;
+
+  // Contest finished
+  if (isContestFinishedScreen || isOver) return (
+    <div className="h-screen bg-[#1a1a2e] flex items-center justify-center text-white">
+      <div className="text-center max-w-md">
+        <div className="w-16 h-16 bg-[#ffa11620] rounded-full flex items-center justify-center mx-auto mb-4">
+          <Trophy className="w-8 h-8 text-[#ffa116]" />
+        </div>
+        <h2 className="text-2xl font-bold mb-2">{isVirtual ? 'Virtual Contest Complete' : 'Contest Ended'}</h2>
+        {/* Show score summary — no ranking for virtual (LeetCode-style) */}
+        {participant && (
+          <div className="mb-6 space-y-3">
+            <div className="grid grid-cols-2 gap-3 mt-4">
+              <div className="bg-[#ffffff08] border border-[#ffffff10] rounded-xl p-3">
+                <div className="text-2xl font-bold text-[#ffa116]">{participant.totalScore || 0}</div>
+                <div className="text-xs text-[#eff1f660]">Score</div>
+              </div>
+              <div className="bg-[#ffffff08] border border-[#ffffff10] rounded-xl p-3">
+                <div className="text-2xl font-bold text-[#2cbb5d]">{participant.problemsSolved || 0}</div>
+                <div className="text-xs text-[#eff1f660]">Solved</div>
+              </div>
+            </div>
+            {isVirtual && (
+              <div className="text-xs text-[#eff1f660]">Virtual practice — does not affect your contest rating</div>
+            )}
+          </div>
+        )}
+        <div className="flex gap-3 justify-center">
+          <button onClick={() => navigate(`/contests/${id}`)} className="px-6 py-2.5 bg-[#ffa116] text-black rounded-lg font-semibold text-sm hover:bg-[#ffb340] transition">View Contest</button>
+          <button onClick={() => navigate('/contests')} className="px-6 py-2.5 border border-[#3c3c3c] text-[#eff1f6] rounded-lg text-sm hover:bg-[#ffffff08] transition">All Contests</button>
         </div>
       </div>
     </div>
   );
 
   // Not started — Enter screen
+  // For finished contests where user is NOT virtual, redirect them back to contest detail
+  if (!hasStarted && currentContest.status === 'finished' && !isVirtual) {
+    return (
+      <div className="h-screen bg-[#1a1a2e] flex items-center justify-center text-white">
+        <div className="text-center max-w-md">
+          <Trophy className="w-16 h-16 text-[#eff1f640] mx-auto mb-6" />
+          <h2 className="text-xl font-bold mb-2">This contest has ended</h2>
+          <p className="text-[#eff1f680] mb-6">Start a virtual practice session from the contest page to solve these problems under timed conditions.</p>
+          <div className="flex gap-3 justify-center">
+            <button onClick={() => navigate(`/contests/${id}`)} className="px-6 py-2.5 bg-[#ffa116] text-black rounded-lg font-semibold text-sm hover:bg-[#ffb340] transition">Go to Contest Page</button>
+            <button onClick={() => navigate('/contests')} className="px-6 py-2.5 border border-[#3c3c3c] text-[#eff1f6] rounded-lg text-sm hover:bg-[#ffffff08] transition">All Contests</button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (!hasStarted) return (
-    <div className="h-screen bg-[#1a1a2e] flex items-center justify-center text-white">
-      <div className="text-center max-w-md">
+    <div className="h-screen bg-slate-100 dark:bg-[#1a1a2e] flex items-center justify-center text-slate-800 dark:text-white">
+      <div className="text-center max-w-md bg-white dark:bg-[#282828] p-8 rounded-2xl border border-slate-350 dark:border-[#3c3c3c] shadow-2xl">
         <Trophy className="w-16 h-16 text-[#ffa116] mx-auto mb-6" />
-        <h2 className="text-2xl font-bold mb-2">{currentContest.title}</h2>
-        <p className="text-[#eff1f680] mb-2">{currentContest.problems?.length} problems • {currentContest.duration} minutes</p>
+        <h2 className="text-2xl font-bold mb-2 text-slate-800 dark:text-white">{currentContest.title}</h2>
+        <p className="text-slate-500 dark:text-[#eff1f680] mb-2">{currentContest.problems?.length} problems • {currentContest.duration} minutes</p>
         <div className="text-3xl font-mono font-bold text-[#2cbb5d] mb-6">{formatTime(timeRemaining)}</div>
         <button onClick={handleEnter} className="px-8 py-3 bg-[#ffa116] text-black rounded-xl font-bold text-lg hover:bg-[#ffb340] transition">
           Enter Contest
         </button>
-        <p className="text-[#eff1f650] text-xs mt-4">You'll see all problems once you enter</p>
+        <p className="text-slate-400 dark:text-[#eff1f650] text-xs mt-4">You'll see all problems once you enter</p>
       </div>
     </div>
   );
@@ -265,17 +374,41 @@ export default function ContestLive() {
   const solvedCount = currentContest.problems?.filter(cp => getProblemStatus(cp.problem._id) === 'accepted').length || 0;
 
   return (
-    <div className="h-screen flex flex-col bg-[#1a1a2e] text-[#eff1f6] overflow-hidden select-none" style={{ fontFamily: "-apple-system,BlinkMacSystemFont,'Inter',sans-serif" }}>
+    <div className="h-screen flex flex-col bg-slate-100 dark:bg-[#1a1a2e] text-slate-800 dark:text-[#eff1f6] overflow-hidden select-none" style={{ fontFamily: "-apple-system,BlinkMacSystemFont,'Inter',sans-serif" }}>
       {/* NAVBAR */}
-      <nav className="h-[46px] flex-shrink-0 bg-[#282828] border-b border-[#3c3c3c] flex items-center px-3 gap-2 z-20">
-        <button onClick={() => navigate(`/contests/${id}`)} className="p-1.5 rounded hover:bg-[#ffffff12] text-[#eff1f680] transition">
+      <nav className="h-[46px] flex-shrink-0 bg-slate-200 dark:bg-[#282828] border-b border-slate-300 dark:border-[#3c3c3c] flex items-center px-3 gap-2 z-20 text-slate-850 dark:text-[#eff1f6]">
+        <button onClick={() => navigate(`/contests/${id}`)} className="p-1.5 rounded hover:bg-slate-350 dark:hover:bg-[#ffffff12] text-slate-600 dark:text-[#eff1f680] transition">
           <ArrowLeft className="w-4 h-4" />
         </button>
         <Trophy className="w-4 h-4 text-[#ffa116]" />
-        <span className="text-sm font-medium truncate max-w-[200px]">{currentContest.title}</span>
-        <span className="text-[10px] text-[#eff1f650] ml-1">{solvedCount}/{currentContest.problems?.length} solved</span>
+        <span className="text-sm font-medium truncate max-w-[200px] text-slate-800 dark:text-white">{currentContest.title}</span>
+        {isVirtual && (
+          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-green-500/20 text-green-400 border border-green-500/30">VIRTUAL</span>
+        )}
+        <span className="text-[10px] text-slate-500 dark:text-[#eff1f650] ml-1">{solvedCount}/{currentContest.problems?.length} solved</span>
 
         <div className="flex-1" />
+        <button onClick={toggleTheme} className="p-1.5 rounded hover:bg-slate-350 dark:hover:bg-[#ffffff12] text-slate-655 dark:text-[#eff1f680] transition mr-2" title="Toggle Theme">
+          {isDark ? (
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <circle cx="12" cy="12" r="5"/>
+              <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+            </svg>
+          ) : (
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+            </svg>
+          )}
+        </button>
+
+        {isVirtual && !isVirtualOver && (
+          <button 
+            onClick={handleGiveUp}
+            className="h-[30px] px-3.5 rounded-lg text-xs font-semibold bg-red-600/20 hover:bg-red-600/30 text-red-400 border border-red-500/30 hover:border-red-500/50 transition flex items-center gap-1.5 mr-2"
+          >
+            Give Up
+          </button>
+        )}
 
         {/* Timer */}
         <div className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold font-mono ${
@@ -288,8 +421,8 @@ export default function ContestLive() {
         </div>
 
         {/* Run / Submit */}
-        <button onClick={handleRun} disabled={running || submitting} className="h-[30px] px-3 rounded-lg text-xs font-medium border border-[#404040] text-[#eff1f6] hover:bg-[#ffffff12] disabled:opacity-40 transition flex items-center gap-1.5 ml-2">
-          {running ? <div className="w-3 h-3 border border-[#eff1f680] border-t-white rounded-full animate-spin" /> : <Play className="w-3 h-3" />}Run
+        <button onClick={handleRun} disabled={running || submitting} className="h-[30px] px-3 rounded-lg text-xs font-medium border border-slate-300 dark:border-[#404040] text-slate-800 dark:text-[#eff1f6] hover:bg-slate-350 dark:hover:bg-[#ffffff12] disabled:opacity-40 transition flex items-center gap-1.5 ml-2">
+          {running ? <div className="w-3 h-3 border border-slate-500 dark:border-[#eff1f680] border-t-white rounded-full animate-spin" /> : <Play className="w-3 h-3" />}Run
         </button>
         <button onClick={handleSubmit} disabled={running || submitting} className="h-[30px] px-3 rounded-lg text-xs font-medium bg-[#2cbb5d] text-white hover:bg-[#26a651] disabled:opacity-40 transition flex items-center gap-1.5">
           {submitting ? <div className="w-3 h-3 border border-white/50 border-t-white rounded-full animate-spin" /> : <Upload className="w-3 h-3" />}Submit
@@ -299,19 +432,19 @@ export default function ContestLive() {
       {/* MAIN CONTENT */}
       <div className="flex-1 flex overflow-hidden">
         {/* LEFT PANEL: Problem Sidebar + Description */}
-        <div className="flex flex-col overflow-hidden bg-[#282828] min-w-0" style={{ width: `${leftWidth}%` }}>
+        <div className="flex flex-col overflow-hidden bg-white dark:bg-[#282828] border-r border-slate-300 dark:border-none min-w-0" style={{ width: `${leftWidth}%` }}>
           {/* Problem tabs */}
-          <div className="flex border-b border-[#3c3c3c] overflow-x-auto flex-shrink-0">
+          <div className="flex border-b border-slate-300 dark:border-[#3c3c3c] bg-slate-200 dark:bg-slate-900 overflow-x-auto flex-shrink-0">
             {currentContest.problems?.map((cp, i) => {
               const st = getProblemStatus(cp.problem._id);
               return (
                 <button key={cp._id} onClick={() => setSelectedIdx(i)}
                   className={`px-3 py-2.5 text-xs font-medium whitespace-nowrap border-b-2 transition flex items-center gap-1.5 ${
-                    selectedIdx === i ? 'border-[#ffa116] text-white' : 'border-transparent text-[#eff1f680] hover:text-[#eff1f6a0]'
+                    selectedIdx === i ? 'border-[#ffa116] text-slate-800 dark:text-white font-bold' : 'border-transparent text-slate-500 dark:text-[#eff1f680] hover:text-slate-800 dark:hover:text-[#eff1f6a0]'
                   }`}>
                   {st === 'accepted' ? <CheckCircle className="w-3 h-3 text-[#2cbb5d]" /> :
                    st === 'attempted' ? <XCircle className="w-3 h-3 text-[#ffc01e]" /> :
-                   <span className="w-3 h-3 rounded-full border border-[#eff1f640] inline-block" />}
+                   <span className="w-3 h-3 rounded-full border border-slate-400 dark:border-[#eff1f640] inline-block" />}
                   Q{i + 1}
                 </button>
               );
@@ -319,7 +452,7 @@ export default function ContestLive() {
           </div>
 
           {/* Problem description */}
-          <div className="flex-1 overflow-y-auto p-5 lc-scroll">
+          <div className="flex-1 overflow-y-auto p-5 lc-scroll text-slate-800 dark:text-[#eff1f6]">
             {currentProblem ? (
               <>
                 <div className="flex items-center gap-2 mb-3">
@@ -329,7 +462,7 @@ export default function ContestLive() {
                   </span>
                   <span className="text-xs text-[#ffa116] font-semibold ml-auto">{currentContest.problems[selectedIdx].points} pts</span>
                 </div>
-                <div className="text-sm text-[#eff1f6cc] leading-relaxed whitespace-pre-wrap mb-4">{currentProblem.description}</div>
+                <div className="text-sm text-[#eff1f6cc] leading-relaxed mb-4 lc-description" dangerouslySetInnerHTML={{ __html: currentProblem.description }} />
                 {currentProblem.constraints && (
                   <div className="mb-4">
                     <h3 className="text-xs font-bold text-[#eff1f680] uppercase mb-2">Constraints</h3>
@@ -357,12 +490,12 @@ export default function ContestLive() {
         <div className="w-[5px] flex-shrink-0 cursor-col-resize bg-[#1a1a2e] hover:bg-[#ffa11640] active:bg-[#ffa11660] transition-colors" onMouseDown={startH} />
 
         {/* RIGHT: Editor + Console */}
-        <div className="flex-1 flex flex-col overflow-hidden bg-[#1e1e1e] min-w-0">
+        <div className="flex-1 flex flex-col overflow-hidden bg-slate-50 dark:bg-[#1e1e1e] min-w-0">
           {/* Editor header */}
-          <div className="h-[38px] flex-shrink-0 flex items-center justify-between px-3 bg-[#282828] border-b border-[#3c3c3c]">
-            <span className="text-xs font-medium text-[#eff1f680]">Code</span>
+          <div className="h-[38px] flex-shrink-0 flex items-center justify-between px-3 bg-slate-200 dark:bg-[#282828] border-b border-slate-300 dark:border-[#3c3c3c]">
+            <span className="text-xs font-medium text-slate-800 dark:text-[#eff1f680]">Code</span>
             <select value={language} onChange={e => { setLanguage(e.target.value); localStorage.setItem('lc_lang', e.target.value); }}
-              className="bg-[#3c3c3c] text-[#eff1f6] text-xs rounded px-2 py-1 border-none outline-none cursor-pointer">
+              className="bg-white dark:bg-[#3c3c3c] text-slate-800 dark:text-[#eff1f6] border border-slate-300 dark:border-none text-xs rounded px-2 py-1 outline-none cursor-pointer">
               {LANGUAGES.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
             </select>
           </div>
@@ -372,16 +505,16 @@ export default function ContestLive() {
             <div style={{ height: showConsole ? `${editorHeight}%` : '100%' }} className="overflow-hidden">
               <Editor
                 onMount={ed => { editorRef.current = ed; }}
-                height="100%" language={language === 'cpp' ? 'cpp' : language} value={code} onChange={v => setCode(v || '')} theme="vs-dark"
+                height="100%" language={language === 'cpp' ? 'cpp' : language} value={code} onChange={v => setCode(v || '')} theme={isDark ? 'vs-dark' : 'vs'}
                 options={{ minimap: { enabled: false }, fontSize: 14, fontFamily: "'Fira Code','Consolas',monospace", fontLigatures: true, lineNumbers: 'on', scrollBeyondLastLine: false, automaticLayout: true, padding: { top: 12, bottom: 12 }, tabSize: language === 'python' ? 4 : 2, bracketPairColorization: { enabled: true }, smoothScrolling: true, cursorBlinking: 'smooth', renderLineHighlight: 'line' }}
               />
             </div>
             {showConsole && (
               <>
-                <div className="h-[5px] flex-shrink-0 cursor-row-resize bg-[#1a1a2e] hover:bg-[#ffa11640] active:bg-[#ffa11660] transition-colors" onMouseDown={startV} />
-                <div style={{ height: `${100 - editorHeight}%` }} className="overflow-hidden bg-[#282828] flex flex-col">
-                  <div className="flex items-center gap-4 px-3 py-2 border-b border-[#3c3c3c]">
-                    <span className="text-xs font-medium text-white">Result</span>
+                <div className="h-[5px] flex-shrink-0 cursor-row-resize bg-slate-300 dark:bg-[#1a1a2e] hover:bg-[#ffa11640] active:bg-[#ffa11660] transition-colors" onMouseDown={startV} />
+                <div style={{ height: `${100 - editorHeight}%` }} className="overflow-hidden bg-slate-50 dark:bg-[#282828] border border-slate-300 dark:border-[#3c3c3c] flex flex-col">
+                  <div className="flex items-center gap-4 px-3 py-2 border-b border-slate-300 dark:border-[#3c3c3c] bg-slate-200 dark:bg-slate-900 text-slate-800 dark:text-white">
+                    <span className="text-xs font-medium">Result</span>
                   </div>
                   <div className="flex-1 overflow-y-auto p-3 lc-scroll text-xs">
                     {submitResult ? (
@@ -400,7 +533,11 @@ export default function ContestLive() {
                             {submitResult.status === 'accepted' ? '✓ Accepted' : `✗ ${submitResult.status}`}
                           </div>
                           <div className="text-[#eff1f680]">
-                            Score: <span className="text-[#ffa116] font-bold">{submitResult.totalScore}</span> • Rank: <span className="text-white font-bold">#{submitResult.rank}</span> • Solved: {submitResult.problemsSolved}
+                            Score: <span className="text-[#ffa116] font-bold">{submitResult.totalScore}</span>
+                            {!isVirtual && (
+                              <> • Rank: <span className="text-white font-bold">#{submitResult.rank}</span></>
+                            )}
+                            • Solved: {submitResult.problemsSolved}
                           </div>
                         </div>
                       )

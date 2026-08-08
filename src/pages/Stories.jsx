@@ -4,7 +4,8 @@ import { useAuthStore } from '../store/authStore';
 import { Heart, MessageCircle, Eye, Clock, ChevronLeft, Plus, X, Search, Filter, Send, Building2, Briefcase, Tag, BookOpen, Trophy, ThumbsUp, ChevronDown, User, Sparkles } from 'lucide-react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
-import ThemeToggle from '../components/ThemeToggle';
+import GuestHeader from '../components/GuestHeader';
+import { useRequireAuth } from '../contexts/AuthGuardContext';
 
 const API = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 const CATEGORIES = ['Interview Experience','Offer Letter','Rejection Story','Preparation Strategy','Career Switch','Internship Experience','Coding Round','System Design Round','HR Round','Tips & Advice','Success Story','Other'];
@@ -35,6 +36,7 @@ const OUTCOME_BADGE = {
 export default function Stories() {
   const navigate = useNavigate();
   const { user } = useAuthStore();
+  const requireAuth = useRequireAuth();
   const token = localStorage.getItem('token');
 
   const [stories, setStories] = useState([]);
@@ -131,12 +133,17 @@ export default function Stories() {
               <Sparkles className="w-5 h-5 text-orange-500" /> Developer Stories
             </h1>
           </div>
-          <div className="flex items-center gap-3">
-            <button onClick={() => setShowCreate(true)} className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-orange-500 to-amber-500 text-white rounded-lg font-medium text-sm hover:from-orange-600 hover:to-amber-600 transition shadow-lg">
+          <GuestHeader>
+            <button
+              onClick={() => {
+                if (!requireAuth(null, 'Sign in to Share Your Story', 'Create a free CodeBattle account or sign in to publish interview experiences, career tips, and prep guides.')) return;
+                setShowCreate(true);
+              }}
+              className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-orange-500 to-amber-500 text-white rounded-lg font-medium text-sm hover:from-orange-600 hover:to-amber-600 transition shadow-lg"
+            >
               <Plus className="w-4 h-4" /> Share Your Story
             </button>
-            <ThemeToggle />
-          </div>
+          </GuestHeader>
         </div>
       </header>
 

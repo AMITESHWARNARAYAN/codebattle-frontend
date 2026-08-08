@@ -5,7 +5,7 @@ import { useAuthStore } from '../store/authStore';
 import { toast } from 'react-hot-toast';
 import { Eye, MessageSquare, Star, ArrowRight, ChevronDown, Info, CheckCircle2, List, FileCode, Check, CheckSquare } from 'lucide-react';
 import axios from 'axios';
-import ThemeToggle from '../components/ThemeToggle';
+import GuestHeader from '../components/GuestHeader';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
@@ -185,11 +185,12 @@ export default function Profile() {
 
   const hasContestRating = profile?.hasContestRating || false;
   const contestRating = profile?.contestRating || 0;
-  const globalRank = Math.max(1, 100000 - (profile.rating || 0) * 10).toLocaleString();
+  const globalRank = (profile.globalRank || 1).toLocaleString();
+  const globalContestRank = (profile.globalContestRank || 1).toLocaleString();
   const totalUsers = (stats?.totalUsers || 1).toLocaleString();
   const topPercent = hasContestRating
-    ? Math.max(0.01, (100 - (contestRating / 30))).toFixed(2)
-    : Math.max(0.01, (100 - ((profile.rating || 0) / 30))).toFixed(2);
+    ? Math.max(0.01, ((profile.globalContestRank || 1) / (stats?.totalUsers || 1)) * 100).toFixed(2)
+    : Math.max(0.01, ((profile.globalRank || 1) / (stats?.totalUsers || 1)) * 100).toFixed(2);
   
   const acceptanceRate = profile.totalMatches > 0 ? ((profile.wins / profile.totalMatches) * 100).toFixed(2) : (stats?.acceptanceRate || 0).toFixed(2);
   
@@ -253,7 +254,7 @@ export default function Profile() {
           <span className="font-semibold text-lg">CodeBattle</span>
         </div>
         <div className="ml-auto">
-          <ThemeToggle />
+          <GuestHeader />
         </div>
       </header>
 
@@ -407,7 +408,7 @@ export default function Profile() {
                   <div>
                     <p className="text-[#8c8c8c] text-[12px] mb-1">Global Ranking</p>
                     <p className="text-[13px] mt-1 font-semibold text-[#262626] dark:text-[#eff2f6]">
-                      {globalRank}<span className="text-[#bfbfbf] font-normal ml-1">/{totalUsers}</span>
+                      {globalContestRank}<span className="text-[#bfbfbf] font-normal ml-1">/{totalUsers}</span>
                     </p>
                   </div>
                   <div>

@@ -5,10 +5,13 @@ import { useAuthStore } from '../store/authStore';
 import { toast } from 'react-hot-toast';
 import { Send, ArrowLeft, Mail } from 'lucide-react';
 import { getSocket, onChallengeRejected } from '../utils/socket';
+import GuestHeader from '../components/GuestHeader';
+import { useRequireAuth } from '../contexts/AuthGuardContext';
 
 export default function FriendChallenge() {
   const navigate = useNavigate();
   const { user } = useAuthStore();
+  const requireAuth = useRequireAuth();
   const { challengeFriendByEmail, loading } = useMatchStore();
   const [friendEmail, setFriendEmail] = useState('');
   const [challengeData, setChallengeData] = useState(null);
@@ -33,6 +36,9 @@ export default function FriendChallenge() {
 
   const handleSendChallenge = async (e) => {
     e.preventDefault();
+
+    if (!requireAuth(null, 'Sign in to Challenge Friends', 'Create a free CodeBattle account or sign in to send 1v1 battle invites by email or custom link.')) return;
+    if (!user) return;
 
     if (!friendEmail.trim()) {
       toast.error('Please enter your friend\'s email');
@@ -72,18 +78,21 @@ export default function FriendChallenge() {
   };
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-white dark:bg-slate-950 text-slate-900 dark:text-white transition-colors">
       {/* Header */}
-      <header className="glass border-b border-slate-700">
-        <div className="max-w-7xl mx-auto px-4 py-4 flex items-center gap-4">
-          <button
-            onClick={() => navigate('/')}
-            className="flex items-center gap-2 px-4 py-2 hover:bg-slate-700 rounded-lg transition"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Back
-          </button>
-          <h1 className="text-2xl font-bold">Challenge a Friend</h1>
+      <header className="glass border-b border-gray-200 dark:border-slate-700">
+        <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => navigate('/')}
+              className="flex items-center gap-2 px-4 py-2 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg transition"
+            >
+              <ArrowLeft className="w-4 h-4 text-gray-700 dark:text-gray-300" />
+              Back
+            </button>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Challenge a Friend</h1>
+          </div>
+          <GuestHeader />
         </div>
       </header>
 
@@ -152,7 +161,7 @@ export default function FriendChallenge() {
             <div className="mb-8 p-4 bg-slate-800 rounded-lg">
               <p className="text-slate-400 text-sm mb-2">Challenged Player</p>
               <p className="text-xl font-bold">{challengeData.challengedUser}</p>
-              <p className="text-slate-400 text-sm mt-1">{challengeData.challengedUser}</p>
+              <p className="text-slate-400 text-sm mt-1">{challengeData.challengedEmail || friendEmail}</p>
             </div>
 
             {isOnline ? (
@@ -171,7 +180,7 @@ export default function FriendChallenge() {
 
             <div className="space-y-3">
               <button
-                onClick={() => navigate('/')}
+                onClick={() => navigate('/dashboard')}
                 className="btn-secondary w-full"
               >
                 Back to Dashboard

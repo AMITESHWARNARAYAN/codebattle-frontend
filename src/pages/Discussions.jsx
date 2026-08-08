@@ -4,7 +4,8 @@ import { useAuthStore } from '../store/authStore';
 import axios from 'axios';
 import { ChevronLeft, MessageSquare, ThumbsUp, ThumbsDown, Eye, Plus, Filter, Code } from 'lucide-react';
 import { toast } from 'react-hot-toast';
-import ThemeToggle from '../components/ThemeToggle';
+import GuestHeader from '../components/GuestHeader';
+import { useRequireAuth } from '../contexts/AuthGuardContext';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
@@ -12,13 +13,14 @@ export default function Discussions() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const problemId = searchParams.get('problemId');
-  const { user } = useAuthStore();
+  const { user, token } = useAuthStore();
   const [discussions, setDiscussions] = useState([]);
   const [problem, setProblem] = useState(null);
   const [loading, setLoading] = useState(true);
   const [sortBy, setSortBy] = useState('recent');
   const [filterTag, setFilterTag] = useState('');
   const [showNewDiscussion, setShowNewDiscussion] = useState(false);
+  const requireAuth = useRequireAuth();
 
   const tags = ['Solution', 'Question', 'Bug', 'Optimization', 'Explanation'];
 
@@ -31,10 +33,8 @@ export default function Discussions() {
 
   const fetchProblem = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await axios.get(`${API_URL}/problems/${problemId}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+      const response = await axios.get(`${API_URL}/problems/${problemId}`, { headers });
       setProblem(response.data);
     } catch (error) {
       console.error('Failed to fetch problem:', error);
@@ -43,13 +43,11 @@ export default function Discussions() {
 
   const fetchDiscussions = async () => {
     try {
-      const token = localStorage.getItem('token');
       let url = `${API_URL}/discussions/problem/${problemId}?sortBy=${sortBy}`;
       if (filterTag) url += `&tag=${filterTag}`;
 
-      const response = await axios.get(url, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+      const response = await axios.get(url, { headers });
       setDiscussions(response.data);
     } catch (error) {
       console.error('Failed to fetch discussions:', error);
@@ -60,8 +58,8 @@ export default function Discussions() {
   };
 
   const handleVote = async (discussionId, voteType) => {
+    if (!requireAuth(null, 'Sign in to Participate', 'Create a free CodeBattle account or sign in to post discussions, share solutions, comment, and upvote community answers.')) return;
     try {
-      const token = localStorage.getItem('token');
       const response = await axios.post(
         `${API_URL}/discussions/${discussionId}/${voteType}`,
         {},
@@ -90,32 +88,33 @@ export default function Discussions() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950">
-      {/* Header */}
-      <header className="border-b border-slate-800 px-6 py-4 bg-slate-900/50">
+    <div className="min-h-screen bg-white dark:bg-slate-950 text-slate-900 dark:text-white transition-colors">
+      <header className="border-b border-gray-200 dark:border-slate-800 px-6 py-4 bg-white/90 dark:bg-slate-900/90 sticky top-0 z-50 backdrop-blur-md">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-4">
             <button
               onClick={() => navigate('/problems')}
-              className="p-2 hover:bg-slate-800 rounded-lg transition"
+              className="p-2 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg transition"
             >
-              <ChevronLeft className="w-5 h-5" />
+              <ChevronLeft className="w-5 h-5 text-gray-700 dark:text-gray-300" />
             </button>
             <div>
-              <h1 className="text-2xl font-bold">Discussions</h1>
-              {problem && <p className="text-slate-400 text-sm">{problem.title}</p>}
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Discussions</h1>
+              {problem && <p className="text-gray-600 dark:text-slate-400 text-sm">{problem.title}</p>}
             </div>
           </div>
-          <div className="flex items-center gap-3">
-            <ThemeToggle />
+          <GuestHeader>
             <button
-              onClick={() => setShowNewDiscussion(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-orange-600 hover:bg-orange-700 rounded-lg transition"
+              onClick={() => {
+                if (!requireAuth(null, 'Sign in to Participate', 'Create a free CodeBattle account or sign in to post discussions, share solutions, comment, and upvote community answers.')) return;
+                setShowNewDiscussion(true);
+              }}
+              className="flex items-center gap-2 px-4 py-2 bg-orange-600 hover:bg-orange-700 rounded-lg transition font-medium text-sm text-white"
             >
               <Plus className="w-4 h-4" />
               New Discussion
             </button>
-          </div>
+          </GuestHeader>
         </div>
       </header>
 

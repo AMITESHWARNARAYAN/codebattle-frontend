@@ -4,7 +4,7 @@ import { useAuthStore } from '../store/authStore';
 import { useUserStore } from '../store/userStore';
 import { useMatchStore } from '../store/matchStore';
 import { useThemeStore } from '../store/themeStore';
-import { LogOut, Trophy, Zap, Users, Check, X, Settings, Calendar, Target, Brain, Sparkles, TrendingUp, Award, Code2, Swords, BookOpen, ArrowRight, Play, Clock, BarChart3 } from 'lucide-react';
+import { LogOut, Trophy, Zap, Users, Check, X, Settings, Calendar, Target, Brain, Sparkles, TrendingUp, Award, Code2, Swords, BookOpen, ArrowRight, Play, Clock, BarChart3, Copy, ChevronRight } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { getSocket } from '../utils/socket';
 import NotificationBell from '../components/NotificationBell';
@@ -99,6 +99,8 @@ export default function Dashboard() {
     toast.success('Logged out successfully');
   };
 
+  // Mock Interview creation removed
+
   const winRate = user?.totalMatches > 0 ? ((user.wins / user.totalMatches) * 100).toFixed(1) : 0;
 
   return (
@@ -125,8 +127,7 @@ export default function Dashboard() {
                   { label: 'Contests', route: '/contests' },
                   { label: 'Challenges', route: '/challenges' },
                   { label: 'Stories', route: '/stories' },
-                  { label: 'Leaderboard', route: '/leaderboard' },
-                  { label: 'Community', route: '/discussions' }
+                  { label: 'Leaderboard', route: '/leaderboard' }
                 ].map((item) => (
                   <button
                     key={item.route}
@@ -201,21 +202,20 @@ export default function Dashboard() {
               <h3 className={`text-xs font-semibold ${textMuted} uppercase tracking-wider mb-3`}>Quick Links</h3>
               <nav className="space-y-1">
                 {[
-                  { icon: BarChart3, label: 'Dashboard', route: '/dashboard' },
-                  { icon: Swords, label: 'Matchmaking', route: '/matchmaking' },
-                  { icon: BookOpen, label: 'Problems', route: '/problems' },
-                  { icon: Trophy, label: 'Contests', route: '/contests' },
-                  { icon: Target, label: 'Challenges', route: '/challenges' },
-                  { icon: Calendar, label: 'Daily Challenge', route: '/daily-challenge' },
-                  { icon: Award, label: 'Leaderboard', route: '/leaderboard' },
-                  { icon: Code2, label: 'Submissions', route: '/submissions' }
-                ].map(({ icon: Icon, label, route }) => (
+                  { label: 'Dashboard', route: '/dashboard' },
+                  { label: 'Matchmaking', route: '/matchmaking' },
+                  { label: 'Problems', route: '/problems' },
+                  { label: 'Contests', route: '/contests' },
+                  { label: 'Challenges', route: '/challenges' },
+                  { label: 'Daily Challenge', route: '/daily-challenge' },
+                  { label: 'Leaderboard', route: '/leaderboard' },
+                  { label: 'Submissions', route: '/submissions' }
+                ].map(({ label, route }) => (
                   <button
                     key={route}
                     onClick={() => navigate(route)}
                     className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-200 ${textMuted} hover:bg-orange-500/10 hover:text-orange-500 dark:hover:text-orange-400`}
                   >
-                    <Icon className="w-4 h-4" />
                     <span className="text-sm font-medium">{label}</span>
                   </button>
                 ))}
@@ -389,23 +389,23 @@ export default function Dashboard() {
         {/* Game Modes */}
         <div className="mb-12">
           <h3 className={`text-2xl font-bold ${textColor} mb-6`}>Choose Your Mode</h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {/* Matchmaking */}
             <div
               onClick={() => navigate('/matchmaking')}
               onMouseEnter={() => setHoveredCard('matchmaking')}
               onMouseLeave={() => setHoveredCard(null)}
-              className={`${cardBg} rounded-xl p-8 border ${borderColor} cursor-pointer transition-all duration-300 ${
-                hoveredCard === 'matchmaking' ? 'transform scale-105 shadow-2xl' : 'shadow-lg'
+              className={`${cardBg} rounded-xl p-6 border ${borderColor} cursor-pointer transition-all duration-300 ${
+                hoveredCard === 'matchmaking' ? 'transform scale-105 shadow-2xl border-orange-500' : 'shadow-lg'
               }`}
             >
-              <h4 className={`text-xl font-bold ${textColor} mb-3`}>Matchmaking</h4>
-              <p className={`text-sm ${textMuted} mb-6`}>
+              <h4 className={`text-lg font-bold ${textColor} mb-3`}>Matchmaking</h4>
+              <p className={`text-xs ${textMuted} mb-6`}>
                 Get matched with players of similar skill level and compete in real-time battles.
               </p>
-              <div className="flex items-center gap-2 text-orange-600 dark:text-orange-400 font-semibold text-sm hover:text-orange-700 transition">
+              <div className="flex items-center gap-2 text-orange-600 dark:text-orange-400 font-semibold text-xs hover:text-orange-700 transition mt-auto">
                 Start Matching
-                <ArrowRight className="w-4 h-4" />
+                <ArrowRight className="w-3.5 h-3.5" />
               </div>
             </div>
 
@@ -414,17 +414,17 @@ export default function Dashboard() {
               onClick={() => navigate('/friend-challenge')}
               onMouseEnter={() => setHoveredCard('friend')}
               onMouseLeave={() => setHoveredCard(null)}
-              className={`${cardBg} rounded-xl p-8 border ${borderColor} cursor-pointer transition-all duration-300 ${
-                hoveredCard === 'friend' ? 'transform scale-105 shadow-2xl' : 'shadow-lg'
+              className={`${cardBg} rounded-xl p-6 border ${borderColor} cursor-pointer transition-all duration-300 ${
+                hoveredCard === 'friend' ? 'transform scale-105 shadow-2xl border-yellow-500' : 'shadow-lg'
               }`}
             >
-              <h4 className={`text-xl font-bold ${textColor} mb-3`}>Challenge Friend</h4>
-              <p className={`text-sm ${textMuted} mb-6`}>
+              <h4 className={`text-lg font-bold ${textColor} mb-3`}>Challenge Friend</h4>
+              <p className={`text-xs ${textMuted} mb-6`}>
                 Send an invitation link to your friend and compete head-to-head in custom matches.
               </p>
-              <div className="flex items-center gap-2 text-yellow-600 dark:text-yellow-400 font-semibold text-sm hover:text-yellow-700 transition">
+              <div className="flex items-center gap-2 text-yellow-600 dark:text-yellow-400 font-semibold text-xs hover:text-yellow-700 transition mt-auto">
                 Challenge Now
-                <ArrowRight className="w-4 h-4" />
+                <ArrowRight className="w-3.5 h-3.5" />
               </div>
             </div>
 
@@ -433,17 +433,17 @@ export default function Dashboard() {
               onClick={() => navigate('/match/solo')}
               onMouseEnter={() => setHoveredCard('solo')}
               onMouseLeave={() => setHoveredCard(null)}
-              className={`${cardBg} rounded-xl p-8 border ${borderColor} cursor-pointer transition-all duration-300 ${
-                hoveredCard === 'solo' ? 'transform scale-105 shadow-2xl' : 'shadow-lg'
+              className={`${cardBg} rounded-xl p-6 border ${borderColor} cursor-pointer transition-all duration-300 ${
+                hoveredCard === 'solo' ? 'transform scale-105 shadow-2xl border-orange-600' : 'shadow-lg'
               }`}
             >
-              <h4 className={`text-xl font-bold ${textColor} mb-3`}>Solo Practice</h4>
-              <p className={`text-sm ${textMuted} mb-6`}>
+              <h4 className={`text-lg font-bold ${textColor} mb-3`}>Solo Practice</h4>
+              <p className={`text-xs ${textMuted} mb-6`}>
                 Practice DSA problems at your own pace without time pressure or competition.
               </p>
-              <div className="flex items-center gap-2 text-orange-500 font-semibold text-sm">
+              <div className="flex items-center gap-2 text-orange-500 font-semibold text-xs mt-auto">
                 Start Practice
-                <ArrowRight className="w-4 h-4" />
+                <ArrowRight className="w-3.5 h-3.5" />
               </div>
             </div>
           </div>
@@ -510,6 +510,8 @@ export default function Dashboard() {
             </div>
           </div>
         </div>
+
+        {/* Mock Interview setup modal removed */}
       </main>
       </div>
     </div>

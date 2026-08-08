@@ -4,33 +4,34 @@ import { useAuthStore } from '../store/authStore';
 import axios from 'axios';
 import { ChevronLeft, Calendar, Flame, Trophy, CheckCircle, Clock, TrendingUp, Zap, Gem, Crown } from 'lucide-react';
 import { toast } from 'react-hot-toast';
-import ThemeToggle from '../components/ThemeToggle';
+import GuestHeader from '../components/GuestHeader';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 export default function DailyChallenge() {
   const navigate = useNavigate();
-  const { user } = useAuthStore();
+  const { user, token } = useAuthStore();
   const [challenge, setChallenge] = useState(null);
   const [userCompleted, setUserCompleted] = useState(false);
   const [streak, setStreak] = useState({ current: 0, longest: 0, totalCompleted: 0 });
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
 
+
   useEffect(() => {
     fetchDailyChallenge();
-    fetchHistory();
-  }, []);
+    if (token) {
+      fetchHistory();
+    }
+  }, [token]);
 
   const fetchDailyChallenge = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await axios.get(`${API_URL}/daily-challenge/today`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+      const response = await axios.get(`${API_URL}/daily-challenge/today`, { headers });
       setChallenge(response.data.challenge);
       setUserCompleted(response.data.userCompleted);
-      setStreak(response.data.userStreak);
+      setStreak(response.data.userStreak || { current: 0, longest: 0, totalCompleted: 0 });
     } catch (error) {
       console.error('Failed to fetch daily challenge:', error);
       toast.error('Failed to load daily challenge');
@@ -41,10 +42,8 @@ export default function DailyChallenge() {
 
   const fetchHistory = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await axios.get(`${API_URL}/daily-challenge/history?limit=7`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+      const response = await axios.get(`${API_URL}/daily-challenge/history?limit=7`, { headers });
       setHistory(response.data);
     } catch (error) {
       console.error('Failed to fetch history:', error);
@@ -53,16 +52,20 @@ export default function DailyChallenge() {
 
   const handleStartChallenge = () => {
     if (challenge?.problem) {
-      navigate(`/match/solo?problemId=${challenge.problem._id}&dailyChallenge=true`);
+      navigate(`/problem/${challenge.problem._id}`);
     }
   };
 
   const getDifficultyColor = (difficulty) => {
     switch (difficulty) {
-      case 'Easy': return 'text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-900/30';
-      case 'Medium': return 'text-yellow-700 dark:text-yellow-400 bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-900/30';
-      case 'Hard': return 'text-red-700 dark:text-red-400 bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-900/30';
-      default: return 'text-gray-700 dark:text-gray-400 bg-gray-50 dark:bg-dark-800 border-gray-200 dark:border-dark-700';
+      case 'Easy':
+        return 'text-green-400 bg-green-950/40 border-green-800';
+      case 'Medium':
+        return 'text-yellow-400 bg-yellow-950/40 border-yellow-800';
+      case 'Hard':
+        return 'text-red-400 bg-red-950/40 border-red-800';
+      default:
+        return 'text-slate-400 bg-slate-900 border-slate-800';
     }
   };
 
@@ -76,27 +79,29 @@ export default function DailyChallenge() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-dark-950 flex items-center justify-center">
-        <div className="text-gray-500 dark:text-gray-400">Loading daily challenge...</div>
+      <div className="min-h-screen bg-white dark:bg-slate-950 flex items-center justify-center">
+        <div className="text-slate-500 dark:text-slate-400">Loading daily challenge...</div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-dark-950">
-      {/* Header */}
-      <header className="bg-white dark:bg-dark-900 border-b border-gray-200 dark:border-dark-800 px-4 sm:px-6 py-4 shadow-sm">
+    <div className="min-h-screen bg-white dark:bg-slate-950 text-slate-900 dark:text-white transition-colors">
+      <header className="border-b border-gray-200 dark:border-slate-800 px-6 py-4 bg-white/90 dark:bg-slate-900/90 sticky top-0 z-50 backdrop-blur-md">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-2 sm:gap-4">
+          <div className="flex items-center gap-4">
             <button
               onClick={() => navigate('/')}
-              className="p-2 hover:bg-gray-100 dark:hover:bg-dark-800 rounded-lg transition"
+              className="p-2 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg transition"
             >
-              <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5 text-gray-700 dark:text-gray-300" />
+              <ChevronLeft className="w-5 h-5 text-gray-700 dark:text-gray-300" />
             </button>
-            <h1 className="text-lg sm:text-2xl font-bold text-gray-900 dark:text-white">Daily Challenge</h1>
+            <h1 className="text-2xl font-bold flex items-center gap-2 text-gray-900 dark:text-white">
+              <Calendar className="w-6 h-6 text-orange-500" />
+              Daily Challenge
+            </h1>
           </div>
-          <ThemeToggle />
+          <GuestHeader />
         </div>
       </header>
 
