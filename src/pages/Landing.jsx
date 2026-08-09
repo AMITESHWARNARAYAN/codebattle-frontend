@@ -146,9 +146,6 @@ export default function Landing() {
               <span className="font-extrabold text-xl tracking-tight bg-gradient-to-r from-orange-500 via-amber-400 to-orange-600 bg-clip-text text-transparent">
                 CodeBattle
               </span>
-              <span className="px-2 py-0.5 text-[10px] font-bold tracking-wider uppercase bg-orange-500/10 text-orange-500 rounded border border-orange-500/20">
-                Platform
-              </span>
             </div>
 
             {/* Navigation Links */}
@@ -209,10 +206,6 @@ export default function Landing() {
             
             {/* Hero Left */}
             <div>
-              <div className="inline-block px-3 py-1 rounded-full bg-orange-500/10 text-orange-500 border border-orange-500/20 text-xs font-bold uppercase tracking-widest mb-6">
-                Competitive Programming & DSA Platform
-              </div>
-
               <h1 className={`text-4xl sm:text-6xl font-black tracking-tight leading-none mb-6 ${textColor}`}>
                 Code. Battle.{' '}
                 <span className="block mt-2 bg-gradient-to-r from-orange-500 via-amber-400 to-orange-600 bg-clip-text text-transparent">
