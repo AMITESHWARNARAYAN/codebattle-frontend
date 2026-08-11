@@ -1,4 +1,3 @@
-import { Moon, Sun } from 'lucide-react';
 import { useThemeStore } from '../store/themeStore';
 
 export default function ThemeToggle({ className = '' }) {
@@ -7,15 +6,10 @@ export default function ThemeToggle({ className = '' }) {
   return (
     <button
       onClick={toggleTheme}
-      className={`p-2 rounded-lg transition ${
-        isDark 
-          ? 'bg-dark-800 hover:bg-dark-700' 
-          : 'bg-gray-100 hover:bg-gray-200'
-      } ${className}`}
+      className={`px-2.5 py-1 rounded-xl transition text-[10px] font-black tracking-wider uppercase border border-slate-200 dark:border-dark-700 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-dark-800 ${className}`}
       aria-label="Toggle theme"
     >
-      {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+      {isDark ? 'LIGHT' : 'DARK'}
     </button>
   );
 }
-

@@ -232,6 +232,8 @@ export default function Contests() {
     const interval = setInterval(() => {
       const now = new Date();
       const updated = {};
+      let shouldReload = false;
+
       [...upcomingContests, ...runningContests].forEach(c => {
         const target = c.status === 'running' ? new Date(c.endTime) : new Date(c.startTime);
         const diff = target - now;
@@ -246,9 +248,16 @@ export default function Contests() {
             : `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
         } else {
           updated[c._id] = '00:00:00';
+          if (new Date(c.endTime) <= now) {
+            shouldReload = true;
+          }
         }
       });
       setTimers(updated);
+
+      if (shouldReload) {
+        loadContests();
+      }
     }, 1000);
     return () => clearInterval(interval);
   }, [upcomingContests, runningContests]);
@@ -262,9 +271,41 @@ export default function Contests() {
       getLeaderboard(10, 'contest')
     ]);
     
-    setUpcomingContests(upcoming.status === 'fulfilled' ? (upcoming.value || []) : []);
-    setRunningContests(running.status === 'fulfilled' ? (running.value || []) : []);
-    setPastContests(past.status === 'fulfilled' ? (past.value || []) : []);
+    const rawUpcoming = upcoming.status === 'fulfilled' ? (upcoming.value || []) : [];
+    const rawRunning = running.status === 'fulfilled' ? (running.value || []) : [];
+    const rawPast = past.status === 'fulfilled' ? (past.value || []) : [];
+
+    const now = new Date();
+    const activeUpcoming = [];
+    const activeRunning = [];
+    const extraPast = [];
+
+    // Filter out any contests whose end time has passed and move them to pastContests
+    rawUpcoming.forEach(c => {
+      if (new Date(c.endTime) <= now) {
+        extraPast.push({ ...c, status: 'finished' });
+      } else if (new Date(c.startTime) <= now) {
+        activeRunning.push({ ...c, status: 'running' });
+      } else {
+        activeUpcoming.push(c);
+      }
+    });
+
+    rawRunning.forEach(c => {
+      if (new Date(c.endTime) <= now) {
+        extraPast.push({ ...c, status: 'finished' });
+      } else {
+        activeRunning.push(c);
+      }
+    });
+
+    const combinedPast = [...extraPast, ...rawPast];
+    const uniquePast = Array.from(new Map(combinedPast.map(c => [c._id, c])).values());
+    uniquePast.sort((a, b) => new Date(b.startTime) - new Date(a.startTime));
+
+    setUpcomingContests(activeUpcoming);
+    setRunningContests(activeRunning);
+    setPastContests(uniquePast);
     
     if (leaderResult.status === 'fulfilled' && leaderResult.value) {
       setRankings(leaderResult.value);

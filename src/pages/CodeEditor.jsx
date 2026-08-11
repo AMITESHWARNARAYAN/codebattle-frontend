@@ -4,7 +4,16 @@ import { useAuthStore } from '../store/authStore';
 import { useMatchStore } from '../store/matchStore';
 import { useContestStore } from '../store/contestStore';
 import Editor from '@monaco-editor/react';
-import { submitCodeNotification, onOpponentSubmitted } from '../utils/socket';
+import { 
+  submitCodeNotification, 
+  onOpponentSubmitted, 
+  joinMatch, 
+  leaveMatch, 
+  onOpponentGaveUp, 
+  onMatchForfeited, 
+  onMatchCompleted, 
+  removeListener 
+} from '../utils/socket';
 import { toast } from 'react-hot-toast';
 import { TestCasePanel, Confetti } from './leetcode/Panels';
 import { LANGUAGES, DEFAULT_CODE, DIFF_COLORS } from './leetcode/constants';
@@ -110,10 +119,66 @@ export default function CodeEditor() {
     return () => clearInterval(t);
   }, []);
 
-  // Opponent socket
+  // Join/leave match socket room
+  useEffect(() => {
+    if (matchId) {
+      joinMatch(matchId);
+      return () => {
+        leaveMatch(matchId);
+      };
+    }
+  }, [matchId]);
+
+  // Opponent & match completion socket events
   useEffect(() => {
     onOpponentSubmitted((data) => { setOpponentSubmitted(true); toast.success(`${data.username} submitted!`); });
   }, []);
+
+  useEffect(() => {
+    if (!matchId) return;
+
+    const handleOpponentGaveUp = (data) => {
+      if (data.userId !== user?._id) {
+        toast.success(`🎉 ${data.username || 'Opponent'} gave up! You won the battle!`, { duration: 5000 });
+        setMatch(prev => prev ? { ...prev, status: 'completed', winner: user?._id } : prev);
+        setTimeout(() => {
+          navigate(`/results/${matchId}`);
+        }, 1500);
+      }
+    };
+
+    const handleMatchForfeited = (data) => {
+      const isWinner = data.winnerId === user?._id;
+      toast.success(isWinner ? '🎉 Opponent forfeited! You won!' : 'Match forfeited!', { duration: 5000 });
+      setMatch(prev => prev ? { ...prev, status: 'completed' } : prev);
+      setTimeout(() => {
+        navigate(`/results/${matchId}`);
+      }, 1500);
+    };
+
+    const handleMatchCompleted = (data) => {
+      setMatch(prev => prev ? { ...prev, status: 'completed' } : prev);
+      const isWinner = data.winnerId === user?._id;
+      if (isWinner) {
+        toast.success('🎉 Battle completed! You won!');
+      } else if (data.winnerId && data.winnerId !== user?._id) {
+        toast.error('Battle completed!');
+      }
+      setTimeout(() => {
+        navigate(`/results/${matchId}`);
+      }, 1500);
+    };
+
+    onOpponentGaveUp(handleOpponentGaveUp);
+    onMatchForfeited(handleMatchForfeited);
+    onMatchCompleted(handleMatchCompleted);
+
+    return () => {
+      removeListener('opponent-gave-up', handleOpponentGaveUp);
+      removeListener('match-forfeited', handleMatchForfeited);
+      removeListener('match-completed', handleMatchCompleted);
+    };
+  }, [matchId, user?._id, navigate]);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -239,16 +304,16 @@ export default function CodeEditor() {
         )}
 
         {/* Give Up (vs modes only) */}
-        {isVs && (
+        {isVs && match?.status !== 'completed' && (
           <button onClick={handleGiveUp} className="h-[30px] px-3 rounded-lg text-xs font-medium border border-[#ef474340] text-[#ef4743] hover:bg-[#ef474315] transition mr-1">
             Give Up
           </button>
         )}
 
-        <button onClick={handleRun} disabled={running || submitting} className="h-[30px] px-3.5 rounded-lg text-xs font-medium border border-[#404040] text-[#eff1f6] hover:bg-[#ffffff12] disabled:opacity-40 transition flex items-center gap-1.5">
+        <button onClick={handleRun} disabled={running || submitting || match?.status === 'completed'} className="h-[30px] px-3.5 rounded-lg text-xs font-medium border border-[#404040] text-[#eff1f6] hover:bg-[#ffffff12] disabled:opacity-40 transition flex items-center gap-1.5">
           {running ? <div className="w-3 h-3 border border-[#eff1f680] border-t-white rounded-full animate-spin"/> : <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>}Run
         </button>
-        <button onClick={handleSubmit} disabled={running || submitting} className="h-[30px] px-3.5 rounded-lg text-xs font-medium bg-[#2cbb5d] text-white hover:bg-[#26a651] disabled:opacity-40 transition flex items-center gap-1.5">
+        <button onClick={handleSubmit} disabled={running || submitting || match?.status === 'completed'} className="h-[30px] px-3.5 rounded-lg text-xs font-medium bg-[#2cbb5d] text-white hover:bg-[#26a651] disabled:opacity-40 transition flex items-center gap-1.5">
           {submitting ? <div className="w-3 h-3 border border-white/50 border-t-white rounded-full animate-spin"/> : <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M4 12l5 5L20 6"/></svg>}Submit
         </button>
       </nav>

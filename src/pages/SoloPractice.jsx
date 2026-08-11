@@ -21,17 +21,14 @@ export default function SoloPractice() {
         setLoading(true);
         const match = await startSoloMatch(problemId);
 
-        // Store daily challenge flag in session storage
         if (isDailyChallenge) {
           sessionStorage.setItem('isDailyChallenge', 'true');
         }
 
-        // Navigate to the CodeEditorNew route using the problem ID
         navigate(`/problem/${match.problem._id || match.problem}`);
       } catch (error) {
         console.error('Failed to start solo match:', error);
         toast.error(error.response?.data?.message || 'Failed to start solo match');
-        // Redirect back to dashboard after error
         setTimeout(() => {
           navigate('/');
         }, 2000);
@@ -44,13 +41,12 @@ export default function SoloPractice() {
   }, [startSoloMatch, navigate, problemId, isDailyChallenge]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+    <div className="min-h-screen flex items-center justify-center bg-white dark:bg-slate-950 text-slate-900 dark:text-white transition-colors">
       <div className="text-center">
-        <div className="animate-spin rounded-full h-16 w-16 border-4 border-indigo-500 border-t-pink-500 mx-auto mb-6"></div>
-        <h2 className="text-2xl font-bold text-white mb-2">Starting Solo Practice</h2>
-        <p className="text-slate-400">Preparing your coding challenge...</p>
+        <div className="animate-spin rounded-full h-12 w-12 border-4 border-orange-500/20 border-t-orange-500 mx-auto mb-6"></div>
+        <h2 className="text-2xl font-black text-slate-900 dark:text-white mb-2">Starting Practice Session</h2>
+        <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">Preparing your coding challenge...</p>
       </div>
     </div>
   );
 }
-

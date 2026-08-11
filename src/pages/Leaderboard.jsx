@@ -2,10 +2,8 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useUserStore } from '../store/userStore';
 import { useAuthStore } from '../store/authStore';
-import { Trophy, ArrowLeft } from 'lucide-react';
 import GuestHeader from '../components/GuestHeader';
 import { toast } from 'react-hot-toast';
-
 import { useRequireAuth } from '../contexts/AuthGuardContext';
 
 export default function Leaderboard() {
@@ -34,80 +32,81 @@ export default function Leaderboard() {
   }, [limit, getLeaderboard]);
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-dark-950">
+    <div className="min-h-screen bg-white dark:bg-slate-950 text-slate-900 dark:text-white transition-colors">
       {/* Header */}
-      <header className="bg-white dark:bg-dark-900 border-b border-gray-200 dark:border-dark-800 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
+      <header className="bg-white/90 dark:bg-slate-950/90 border-b border-slate-200 dark:border-dark-800 sticky top-0 z-50 backdrop-blur-md">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <button
               onClick={() => navigate('/')}
-              className="flex items-center gap-2 px-4 py-2 hover:bg-gray-100 dark:hover:bg-dark-800 rounded-lg transition"
+              className="flex items-center gap-1 px-3 py-1.5 hover:bg-slate-100 dark:hover:bg-dark-800 rounded-xl transition text-slate-700 dark:text-slate-200 font-bold text-xs"
             >
-              <ArrowLeft className="w-4 h-4 text-gray-700 dark:text-gray-300" />
-              <span className="text-gray-900 dark:text-white">Back</span>
+              ← Back
             </button>
-            <h1 className="text-2xl font-bold flex items-center gap-2 text-gray-900 dark:text-white">
-              <Trophy className="w-6 h-6 text-yellow-600 dark:text-yellow-500" />
-              Global Leaderboard
-            </h1>
+            <h1 className="text-xl font-black text-slate-900 dark:text-white tracking-tight">Global Leaderboard</h1>
           </div>
           <GuestHeader />
         </div>
       </header>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 py-12">
+      <main className="max-w-6xl mx-auto px-4 sm:px-6 py-10">
         {loading ? (
           <div className="text-center py-12">
-            <div className="animate-spin rounded-full h-12 w-12 border-4 border-gray-300 dark:border-dark-700 border-t-gray-900 dark:border-t-white mx-auto mb-4"></div>
-            <p className="text-gray-600 dark:text-gray-400">Loading leaderboard...</p>
+            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-orange-500 mx-auto mb-4" />
+            <p className="text-xs font-bold text-slate-500 dark:text-slate-400">Loading leaderboard...</p>
           </div>
         ) : (
-          <div className="bg-white dark:bg-dark-900 border border-gray-200 dark:border-dark-800 rounded-lg overflow-hidden shadow-sm">
+          <div className="bg-slate-50 dark:bg-dark-900 border border-slate-200/80 dark:border-dark-800 rounded-3xl overflow-hidden shadow-sm">
             <div className="overflow-x-auto">
-              <table className="w-full">
+              <table className="w-full text-left border-collapse">
                 <thead>
-                  <tr className="bg-gray-50 dark:bg-dark-800 border-b border-gray-200 dark:border-dark-700">
-                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">Rank</th>
-                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">Player</th>
-                    <th className="px-6 py-4 text-center text-sm font-semibold text-gray-700 dark:text-gray-300">Battle Rating</th>
-                    <th className="px-6 py-4 text-center text-sm font-semibold text-gray-700 dark:text-gray-300">Contest Rating</th>
-                    <th className="px-6 py-4 text-center text-sm font-semibold text-gray-700 dark:text-gray-300">Wins</th>
-                    <th className="px-6 py-4 text-center text-sm font-semibold text-gray-700 dark:text-gray-300">Losses</th>
-                    <th className="px-6 py-4 text-center text-sm font-semibold text-gray-700 dark:text-gray-300">Win Rate</th>
-                    <th className="px-6 py-4 text-center text-sm font-semibold text-gray-700 dark:text-gray-300">Matches</th>
+                  <tr className="bg-white dark:bg-dark-800/80 border-b border-slate-200/80 dark:border-dark-700/60 text-slate-500 dark:text-slate-400 text-[10px] font-extrabold uppercase tracking-wider">
+                    <th className="px-6 py-4">Rank</th>
+                    <th className="px-6 py-4">Player</th>
+                    <th className="px-6 py-4 text-center">Battle Rating</th>
+                    <th className="px-6 py-4 text-center">Contest Rating</th>
+                    <th className="px-6 py-4 text-center">Wins</th>
+                    <th className="px-6 py-4 text-center">Losses</th>
+                    <th className="px-6 py-4 text-center">Win Rate</th>
+                    <th className="px-6 py-4 text-center">Matches</th>
                   </tr>
                 </thead>
-                <tbody>
+                <tbody className="divide-y divide-slate-200/60 dark:divide-dark-800 text-xs">
                   {leaderboard.map((player, idx) => (
                     <tr
                       key={idx}
                       onClick={() => handleUserClick(player.username)}
-                      className="border-b border-gray-200 dark:border-dark-800 hover:bg-gray-50 dark:hover:bg-dark-800 transition cursor-pointer"
+                      className="hover:bg-white dark:hover:bg-dark-800/50 transition cursor-pointer font-bold"
                     >
                       <td className="px-6 py-4">
-                        <div className="flex items-center gap-2">
-                          {idx === 0 && <Trophy className="w-5 h-5 text-yellow-600 dark:text-yellow-500" />}
-                          {idx === 1 && <Trophy className="w-5 h-5 text-gray-500 dark:text-gray-400" />}
-                          {idx === 2 && <Trophy className="w-5 h-5 text-orange-600 dark:text-orange-500" />}
-                          <span className="font-bold text-gray-900 dark:text-white">{player.rank}</span>
-                        </div>
+                        <span className={`px-2.5 py-1 rounded-lg text-xs font-black ${
+                          idx === 0 
+                            ? 'bg-amber-500/10 text-amber-500 border border-amber-500/20' 
+                            : idx === 1 
+                            ? 'bg-slate-500/10 text-slate-500 border border-slate-500/20' 
+                            : idx === 2 
+                            ? 'bg-orange-500/10 text-orange-500 border border-orange-500/20' 
+                            : 'text-slate-700 dark:text-slate-300'
+                        }`}>
+                          #{player.rank}
+                        </span>
                       </td>
-                      <td className="px-6 py-4 font-semibold text-gray-900 dark:text-white">{player.username}</td>
+                      <td className="px-6 py-4 text-slate-900 dark:text-white font-extrabold">{player.username}</td>
                       <td className="px-6 py-4 text-center">
-                        <span className="px-3 py-1 bg-orange-100 dark:bg-orange-900/20 text-orange-700 dark:text-orange-300 rounded-full font-bold text-sm">
+                        <span className="px-2.5 py-1 bg-orange-500/10 text-orange-500 rounded-lg font-black border border-orange-500/20">
                           {player.rating}
                         </span>
                       </td>
                       <td className="px-6 py-4 text-center">
-                        <span className="px-3 py-1 bg-blue-100 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 rounded-full font-bold text-sm">
+                        <span className="px-2.5 py-1 bg-blue-500/10 text-blue-500 rounded-lg font-black border border-blue-500/20">
                           {player.contestRating || 0}
                         </span>
                       </td>
-                      <td className="px-6 py-4 text-center text-green-600 dark:text-green-500 font-semibold">{player.wins}</td>
-                      <td className="px-6 py-4 text-center text-red-600 dark:text-red-500 font-semibold">{player.losses}</td>
-                      <td className="px-6 py-4 text-center font-semibold text-gray-900 dark:text-white">{player.winRate}%</td>
-                      <td className="px-6 py-4 text-center font-semibold text-gray-900 dark:text-white">{player.totalMatches}</td>
+                      <td className="px-6 py-4 text-center text-emerald-500 font-extrabold">{player.wins}</td>
+                      <td className="px-6 py-4 text-center text-rose-500 font-extrabold">{player.losses}</td>
+                      <td className="px-6 py-4 text-center font-extrabold text-slate-900 dark:text-white">{player.winRate}%</td>
+                      <td className="px-6 py-4 text-center font-extrabold text-slate-900 dark:text-white">{player.totalMatches}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -116,7 +115,7 @@ export default function Leaderboard() {
 
             {leaderboard.length === 0 && (
               <div className="text-center py-12">
-                <p className="text-gray-500 dark:text-gray-400">No players yet</p>
+                <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">No players found</p>
               </div>
             )}
           </div>
@@ -125,4 +124,3 @@ export default function Leaderboard() {
     </div>
   );
 }
-
